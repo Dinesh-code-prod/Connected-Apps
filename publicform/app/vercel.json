@@ -1,4 +1,5 @@
 {
+  "rootDirectory": "publicform/app",
   "headers": [
     {
       "source": "/(.*)",
