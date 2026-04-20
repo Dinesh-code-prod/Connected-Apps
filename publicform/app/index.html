@@ -1,0 +1,45 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Facilio Connected Apps Quickstart</title>
+    
+    <link rel="stylesheet" href="/app/styles/app.css">
+
+    <!-- Facilio Connected Apps SDK-->
+    <script type="text/javascript" src="https://static.facilio.com/apps-sdk/latest/facilio_apps_sdk.min.js"></script>
+    
+    <!-- VueJS-->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
+
+    <script type="text/javascript" src="/app/scripts/app.js"></script>
+</head>
+<body>
+    <div id="app" class="center height100">
+        <div>
+            <img src="/app/images/logo.svg" width="100"/>
+            <h1>Facilio Connected Apps Quickstart</h1>
+            <p v-if="currentUser">Hello <b>{{currentUser.name}}</b>, This is a sample connected app widget.</p>
+        </div>
+    </div>
+    <script type="text/javascript">
+        var app = new Vue({
+            el: '#app',
+            data: {
+                currentUser: null
+            },
+            mounted() {
+                window.facilioApp = FacilioAppSDK.init();
+                window.facilioApp.on("app.loaded", (data) => {
+                    this.currentUser = window.facilioApp.getCurrentUser();
+                    this.fetchData();
+                });
+            },
+            methods: {
+                fetchData() {
+                    console.log(isEmpty(this.currentUser))
+                }
+            },
+        })
+    </script>
+</body>
+</html>

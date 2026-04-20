@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Job Completion Report</title>
+<style>
+/* =========================
+   GLOBAL / PRINT
+========================= */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f2f2f2;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  color: #000;
+}
+
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  background: #fff;
+  margin: 20px auto;
+  padding: 14mm;
+  box-shadow: 0 0 10px rgba(0,0,0,.15);
+}
+@media print {
+  .print-controls {
+    display: none;
+  }
+}
+@media print {
+  body {
+    background: none;
+  }
+  .page {
+    margin: 0;
+    box-shadow: none;
+  }
+}
+/* =========================
+   HEADER
+========================= */
+/* .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #000;
+  padding-bottom: 10px;
+} */
+.header {
+  position: relative;
+}
+.company-info {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.company-info strong {
+  font-size: 13px;
+}
+
+.logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.logo img {
+  height: 60px;
+}
+ 
+
+/* =========================
+   TITLE
+========================= */
+.report-title {
+  text-align: center;
+  font-weight: bold;
+  font-size: 18px;
+  margin: 12px 0;
+  border: 2px solid #000;
+  padding: 6px;
+}
+
+/* =========================
+   TABLES
+========================= */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+.table th,
+.table td {
+  border: 1px solid #000;
+  padding: 6px;
+  vertical-align: top;
+}
+
+.table th {
+  background: #f5f5f5;
+  font-weight: bold;
+}
+
+/* =========================
+   FLEX ROWS
+========================= */
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.col {
+  flex: 1;
+}
+
+/* =========================
+   INPUTS
+========================= */
+input, textarea, select {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+textarea {
+  resize: none;
+  min-height: 80px;
+}
+
+/* =========================
+   PHOTO BOX
+========================= */
+.photo-box {
+  height: 160px;
+  border: 1px solid #000;
+}
+
+/* =========================
+   SIGNATURES
+========================= */
+.signature-box {
+  height: 60px;
+  border: 1px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+.footer {
+  position: absolute;
+  bottom: 14mm;
+  left: 14mm;
+  right: 14mm;
+  font-size: 11px;
+}
+
+.footer-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.footer-table td {
+  border: 1px solid #000;
+  padding: 4px;
+  text-align: center;
+}
+.imageclass {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+    .print-button {
+      position: fixed;
+      top: 20px;
+      right: 40px;
+      z-index: 999;
+      padding: 10px 20px;
+      background-color: #003865;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+  .footer {
+  position: absolute;
+  bottom: 14mm;
+  left: 14mm;
+  right: 14mm;
+  font-size: 11px;
+}
+ .powered-by {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.powered-by img {
+  height: 24px;
+  object-fit: contain;
+}
+@page {
+  size: A4;
+  margin: 14mm;
+}
+.page {
+  padding-bottom: 25mm;
+}
+.page {
+  page-break-after: always;
+}
+
+.page:last-child {
+  page-break-after: auto;
+}
+.page {
+  position: relative;        /* 🔥 REQUIRED */
+  padding-bottom: 40mm;      /* space for footer */
+}
+table,
+tr,
+td,
+th {
+  page-break-inside: avoid;
+}
+
+.signature-box,
+.photo-box {
+  page-break-inside: avoid;
+}
+@media print {
+  .print-button {
+    display: none;
+  }
+}
+/* .arabic {
+  font-family: 'Cairo', Arial, sans-serif;
+  direction: rtl;
+  unicode-bidi: embed;
+} */
+</style>
+</head>
+
+<body>
+   <button class="print-button"  @click="downloadPDF" >Print</button>
+<div id="app">
+
+  <!-- ================= PAGE 1 ================= -->
+  <div class="page">
+
+    <!-- HEADER -->
+<div class="header">
+  <!-- English -->
+  <div class="company-info left">
+    <strong>MASAKEN LUXURY SERVICES L.L.C</strong><br>
+    Binghatti Industries, M floor<br>
+    Dubai Silicon Oasis, Dubai, U.A.E.<br>
+    E-mail: Service@Masaken.me<br>
+    Website: www.masaken.me
+  </div>
+
+  <!-- Logo -->
+  <div class="logo">
+    <img src="masakenlogo.jpeg" class="logo" style="align-items:center" />
+  </div>
+
+  <!-- <div class="company-info right arabic" lang="ar" dir="rtl">
+    <strong>مساكن للخدمات الفاخرة</strong><br>
+    بن غاطي للصناعة، طابق الميزانين<br>
+    دبي واحة السيليكون، دبي، الإمارات العربية المتحدة<br>
+    Service@Masaken.me :إيميل<br>
+    www.masaken.me :الموقع الإلكتروني
+  </div> -->
+</div>
+
+    <!-- TITLE -->
+    <div class="report-title">JOB COMPLETION REPORT</div>
+
+<!-- BASIC INFO -->
+<table class="table">
+  <tr>
+    <td>
+      <strong>Building Property:</strong><br>
+      {{ result.building }}
+    </td>
+    <td>
+      <strong>Unit Number:</strong><br>
+      {{ result.resource }}
+    </td>
+  </tr>
+
+  <tr>
+    <td>
+      <strong>Date of Completion:</strong><br>
+      {{ result.time }}
+    </td>
+    <td>
+      <strong>Reference No:</strong><br>
+      {{ result.woid }}
+    </td>
+  </tr>
+
+  <tr>
+    <td colspan="2">
+      <strong>Service Request No:</strong><br>
+      {{ result.srid }}
+    </td>
+  </tr>
+</table>
+
+
+  <table class="table">
+  <tr>
+    <th style="width: 50%;">Description of Work</th>
+    <th colspan="2" style="width: 50%;">Evaluation Criteria</th>
+  </tr>
+
+  <tr>
+    <td rowspan="4">
+      {{ result.description }}
+    </td>
+    <td>Our Response Time</td>
+    <td>{{ result.response }}</td>
+  </tr>
+
+  <tr>
+    <td>Our Service With You</td>
+    <td>{{ result.service }}</td>
+  </tr>
+
+  <tr>
+    <td>Service Quality</td>
+    <td>{{ result.quality }}</td>
+  </tr>
+
+  <tr>
+    <td>Our Qualifications</td>
+    <td>{{ result.qualification }}</td>
+  </tr>
+</table>
+
+
+    <!-- COMMENTS -->
+    <table class="table">
+      <tr>
+        <td><strong>Comments</strong><br>{{result.remarks}}</td>
+      </tr>
+      <tr>
+        <td><strong>Quotation Reference No</strong><br>{{result.quoteId}}</td>
+      </tr>
+      <tr>
+        <td><strong>Remarks</strong><br>{{result.remarks}}</td>
+      </tr>
+    </table>
+
+    <!-- PHOTOS -->
+    <table class="table">
+    <tr>
+      <th>Photographic Evidence</th>
+    </tr>
+    <tr>
+      <td>
+        <div class="photo-box" style="display:flex; gap:10px; flex-wrap:wrap;">
+          <img
+            v-for="(img, index) in photos"
+            :key="index"
+            :src="img"
+            class="imageclass"
+            style="max-height:150px;"
+          />
+          <span v-if="photos.length === 0">-</span>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+    <br>
+    <table class="table">
+      <tr>
+        <td>
+          <strong>Technician Name: {{result.technican}}</strong><br>
+          
+        </td>
+        <td>
+          <strong>Client Name: {{result.requestor}}</strong><br>
+          
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <strong>Signature:</strong>
+          <div class="signature-box">
+            <img v-if="techsign" :src="techsign" class="imageclass">
+        <span v-else>-</span>
+          </div>
+        </td>
+        <td>
+          <strong>Signature:</strong>
+          <div class="signature-box">
+            <img v-if="clientsign" :src="clientsign" class="imageclass">
+        <span v-else>-</span>
+          </div>
+          
+        </td>
+      </tr>
+    </table>
+    <div class="footer">
+      <table class="footer-table">
+        <tr>
+          <td>Title: Job Completion Report</td>
+          <td>Identification No: MLS-SOP11-F004</td>
+        </tr>
+        <tr>
+          <td>Page 1 of 2</td>
+          <td>Effective Date: September 1, 2025</td>
+        </tr>
+      </table>
+
+      <div class="powered-by">
+        <strong>Powered by:</strong>
+        <img src="facilio.png" alt="Facilio Logo">
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- Facilio SDK -->
+  <script src="https://static.facilio.com/apps-sdk/beta/facilio_apps_sdk.min.js"></script>
+  <!-- Vue -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
+<script>
+  
+new Vue({
+  el: '#app',
+  data: {
+  result: {},
+  clientsign: null,
+  techsign: null,
+  fileId: null,
+  photos: [] 
+},
+    mounted() {
+  window.facilioApp = FacilioAppSDK.init();
+  window.facilioApp.on("app.loaded", async (data) => {
+    console.log(data);
+    const id = data.context.id;
+    console.log(data.context.id);
+    const result = await this.getdetails(id);
+    this.result = result;
+    let attachments = this.result.attach || [];
+    this.photos = await Promise.all(
+      attachments.map(async (fileId) => {
+        return await this.imageTobase64(fileId);
+      })
+    );
+    console.log("workorder:", this.result);
+    if (data.context.client_signature_workorderId) {
+        this.clientsign = await this.imageTobase64(data.context.client_signature_workorderId);
+      }
+       if (data.context.technician_signature_workorderId) {
+        this.techsign = await this.imageTobase64(data.context.technician_signature_workorderId);
+      }
+
+  });
+},
+  methods: {
+   async downloadPDF(){
+
+    const id = this.result.woid || this.contextId;
+
+    this.fileId = await this.mobileprint(id);
+
+    const woPdfName = "WorkOrder_" + id + ".pdf";
+
+    window.facilioApp.interface.triggerDownload(
+        this.fileId,
+        woPdfName
+    );
+
+},
+  async getdetails(id) {
+   const res = await window.facilioApp.request.invokeFacilioAPI(
+   "/v2/workflow/runWorkflow",
+        {
+          method: "POST",
+          data: {
+            nameSpace: "ConnectedApp",
+            functionName: "getwo",
+            paramList: [id]
+          }
+        }
+      );
+      console.log(res?.result?.workflow?.returnValue);
+      return res?.result?.workflow?.returnValue || {};
+    },
+     async mobileprint(id) {
+   const res = await window.facilioApp.request.invokeFacilioAPI(
+   "/v2/workflow/runWorkflow",
+        {
+          method: "POST",
+          data: {
+            nameSpace: "ConnectedApp",
+            functionName: "printmobile",
+            paramList: [id]
+          }
+        }
+      );
+      console.log(res?.result?.workflow?.returnValue);
+      return res?.result?.workflow?.returnValue || {};
+    },
+     async imageTobase64(id) {
+      //url = url.replace("/api", "");
+      return "data:image/jpeg;base64," + await window.facilioApp.common.toBase64({fileId: id });
+    },
+
+  }
+});
+</script>
+</body>
+</html>

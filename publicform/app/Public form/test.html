@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Service Request – Public</title>
+
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
+
+<style>
+body { margin:0; background:#FAFAFA; font-family:Roboto,sans-serif; color:#283648; }
+.main-bg { height:240px; background:#e9eef5; }
+.form-container { margin:-140px auto 24px; width:720px; max-width:calc(100% - 32px); }
+.form-section { background:#fff; border-radius:12px; padding:24px; margin-bottom:16px; border:1px solid #EAE9E9; }
+.form-header { font-size:14px; font-weight:500; margin-bottom:16px; text-transform:uppercase; }
+.form-row { display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+.form-col { flex:1; min-width:220px; display:flex; flex-direction:column; gap:6px; }
+.space-col { flex:2; min-width:300px; }
+.input-label { font-size:12px; }
+.input-field,.select-field,.textarea-field {
+  border:1px solid #DBDBDB; border-radius:4px; padding:8px 12px; font-size:14px;
+}
+.textarea-field { min-height:60px; resize:vertical; }
+.footer { display:flex; justify-content:flex-end; gap:8px; }
+.btn { padding:8px 24px; border-radius:4px; border:none; cursor:pointer; }
+.btn-primary { background:#0059D6; color:#fff; }
+.form-section {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.input-field:focus,
+.select-field:focus,
+.textarea-field:focus {
+  outline: none;
+  border-color: #0059D6;
+  box-shadow: 0 0 0 2px rgba(0,89,214,0.1);
+}
+
+.form-header {
+  letter-spacing: 0.6px;
+}
+
+.btn-primary {
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+  background: #0047b3;
+  transform: translateY(-1px);
+}
+</style>
+</head>
+
+<body>
+<div id="js-check" style="background:#FFF3CD;border:1px solid #FFE8A1;padding:10px;margin:8px;border-radius:6px;color:#8A6D3B;font-weight:500;text-align:center;">JavaScript not running — if this banner remains after page load, open DevTools Console and check for errors.</div>
+<div id="app">
+  <div class="main-bg"></div>
+
+  <div class="form-container">
+    <div v-if="formSubmitted" style="margin-bottom:12px;">
+      <div style="background:#E6FFED;border:1px solid #B7F2C8;padding:12px 16px;border-radius:8px;color:#1B5E20;font-weight:500;">Form submitted successfully.</div>
+    </div>
+
+    <!-- hide form when submitted -->
+    <div v-if="!formSubmitted">
+    <!-- BASIC DETAILS -->
+    <div class="form-section">
+      <div class="form-header">Basic Details</div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="input-label">Subject *</label>
+          <input class="input-field" v-model="form.subject">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="input-label">Problem Description</label>
+          <textarea class="textarea-field" v-model="form.description"></textarea>
+        </div>
+      </div>
+      <!-- SERVICE REQUEST TYPE -->
+        <div class="form-row">
+          <div class="form-col">
+            <label class="input-label">Service Request Type *</label>
+            <select class="select-field" v-model="serviceRequestType">
+              <option value="">Select</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Service">Service</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="input-label">Residence *</label>
+            <select class="select-field" v-model="form.residenceType">
+              <option value="">Select</option>
+              <option value="Tenant">Tenant</option>
+              <option value="Owner">Owner</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="input-label">Preferred Date & Time *</label>
+            <input
+              type="datetime-local"
+              class="input-field"
+              v-model="form.preferredDateTime"
+            >
+          </div>
+        </div>
+      <!-- SITE / BUILDING / SPACE -->
+      <div class="form-row">
+        <div class="form-col">
+          <label class="input-label">Site</label>
+          <select class="select-field" v-model="selectedSite" @change="onSiteChange">
+            <option value="">Select Site</option>
+            <option v-for="s in sites" :key="s.id" :value="s">{{ s.name }}</option>
+          </select>
+        </div>
+
+        <div class="form-col">
+          <label class="input-label">Building</label>
+          <select class="select-field"
+                v-model="selectedBuildingId"
+                @change="onBuildingChange"
+                :disabled="!buildings.length">
+          <option value="">Select Building</option>
+          <option v-for="b in buildings" :key="b.id" :value="b.id">
+            {{ b.name }}
+          </option>
+          </select>
+        </div>
+
+        <div class="form-col space-col">
+          <label class="input-label">Space</label>
+          <div style="position:relative;">
+            <input class="input-field"
+                    type="text"
+                    v-model="spaceQuery"
+                    :disabled="!selectedBuilding"
+                    @input="onSpaceInput"
+                    @focus="spaces.length && (showSpaceSuggestions=true)"
+                    @blur="onSpaceBlur"
+                    placeholder="Type to search or enter new space"
+                  />
+
+            <ul v-if="showSpaceSuggestions"
+                style="position:absolute;z-index:50;background:#fff;border:1px solid #ddd;width:100%;max-height:260px;overflow:auto;margin:4px 0 0 0;padding:0;list-style:none;border-radius:4px;">
+              <li v-for="s in filteredSpaces"
+                  :key="s.id"
+                  @mousedown.prevent="selectSpaceFromList(s)"
+                  style="padding:8px;border-bottom:1px solid #f1f1f1;cursor:pointer;">
+                {{ s.name }}
+              </li>
+              <li v-if="isLoading" style="padding:8px;color:#666">Searching…</li>
+              <li v-else-if="!filteredSpaces.length" style="padding:8px;color:#666">No matches.</li>
+            </ul>
+          </div>
+          <div style="font-size:12px;color:#666;margin-top:6px;display:flex;align-items:center;gap:8px;">
+            <div>Fetched spaces:</div>
+            <div style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ spaces.map(sp=>sp.name).join(', ') || '—' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATEGORY / SUBCATEGORY / PROBLEM -->
+      <div class="form-row">
+        <div class="form-col">
+          <label class="input-label">Category</label>
+            <select class="select-field" v-model="selectedCategory" :disabled="!serviceRequestType" @change="onCategoryChange">
+              <option value="">Select Category</option>
+              <option v-for="opt in categoryOptions" :key="(typeof opt === 'string' ? 's-'+opt : opt.id)" :value="opt">
+                {{ typeof opt === 'string' ? opt : opt.name }}
+              </option>
+            </select>
+        </div>
+
+        <div class="form-col">
+          <label class="input-label">Subcategory</label>
+          <select class="select-field" v-model="selectedSubcategory" @change="onSubcategoryChange" :disabled="!subcategoryMappings.length">
+            <option value="">Select Subcategory</option>
+            <option v-for="m in subcategoryMappings" :key="m.id" :value="m">
+              {{ (m.subcategory && m.subcategory.name) || m.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-col">
+          <label class="input-label">Problem</label>
+          <select class="select-field" v-model="selectedProblem" :disabled="!problems.length">
+            <option value="">Select Problem</option>
+            <option v-for="p in problems" :key="p.id" :value="p">
+              {{ p.name }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- REQUESTOR -->
+    <div class="form-section">
+      <div class="form-header">Requestor Details</div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="input-label">Requester Name *</label>
+          <input class="input-field" v-model="form.requestorName">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="input-label">Contact Number *</label>
+          <input class="input-field" v-model="form.contactNumber">
+        </div>
+        <div class="form-col">
+          <label class="input-label">Requester Email</label>
+          <input class="input-field" v-model="form.email">
+        </div>
+      </div>
+        <div class="form-row">
+            <div class="form-col">
+              <label class="input-label">Attachment <span class="mandatory">*</span></label>
+              <div class="file-upload">
+                <div class="upload-label">Drag and Drop here</div>
+                <div class="upload-or">or</div>
+                <input type="file" id="fileInput" style="display:none" @change="onFileChange" />
+                <button class="upload-btn" @click.prevent="triggerFileInput">Browse File</button>
+                <div v-if="form.attachments.length" style="margin-top:8px; font-size:12px; color:#607796;">
+                  <div>{{ form.attachments[0].name }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="input-label">Pictures</label>
+          <input type="file" multiple accept="image/*" @change="handleFileInput" />
+          <!-- <label class="input-label">Attachments</label>
+          <input type="file" multiple @change="handleFileInput" />
+          <div style="margin-top:8px;font-size:13px;color:#333">
+            <div v-if="attachments.length">
+              <div v-for="(a,idx) in attachments" :key="a.id || a.name" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <div style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  {{ a.name || a.fileName }}
+                  <span v-if="a.uploading" style="color:#666;margin-left:8px">(uploading...)</span>
+                  <span v-else-if="a.status === 'uploaded'" style="color:#1B5E20;font-weight:500;margin-left:8px">(uploaded)</span>
+                  <span v-else-if="a.error" style="color:#B00020;margin-left:8px">(error)</span>
+                  <span v-else-if="a.status === 'no-id'" style="color:#B36E00;margin-left:8px">(uploaded — no id)</span>
+                </div>
+                <button type="button" style="padding:4px 8px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer;" @click="removeAttachment(idx)">Remove</button>
+              </div>
+            </div>
+            <div v-else style="color:#666">No attachments</div>
+          </div> -->
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button class="btn btn-primary" :disabled="isSubmitting" @click="onSubmit">{{ isSubmitting ? 'Submitting...' : 'Submit' }}</button>
+    </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.14/vue.min.js"></script>
+<script src="https://static.facilio.com/apps-sdk/latest/facilio_apps_sdk.min.js"></script>
+
+<script>
+/*
+  Clean single script: categories/subcategories/problems + attachments (addFile) + spaces
+*/
+const REQUEST_TYPE_CATEGORY_MATRIX = {
+  Maintenance: [
+    { id: 2762880, name: 'Others' },
+    { id: 2762867, name: 'Swimming pool' },
+    { id: 2762866, name: 'Plumbing' },
+    { id: 2762861, name: 'Joinery' },
+    { id: 2762860, name: 'HVAC' },
+    { id: 2762859, name: 'House Keeping' },
+    { id: 2762858, name: 'Gym' },
+    { id: 2762857, name: 'Fire Safety' },
+    { id: 2762856, name: 'Energy' },
+    { id: 2762855, name: 'Electrical' },
+    { id: 2762854, name: 'Cleaning' },
+    { id: 2762853, name: 'Civil' },
+    { id: 2762852, name: 'Aluminium' },
+    { id: 2762851, name: 'Access control' }
+  ],
+
+  Service: [
+    { id: 2762865, name: 'Others' },
+    { id: 2762864, name: 'MEP AMC service' },
+    { id: 2762863, name: 'Maid service' },
+    { id: 2762862, name: 'Lap pool Maintenance' },
+    { id: 2762849, name: 'A/C duct cleaning' },
+    { id: 2762823, name: 'A/C service' }
+  ]
+};
+
+const CATEGORY_SUBCATEGORY_MATRIX = {
+  2762863: [{ id: 2613280, name: 'Maid service Work' }],
+  2762864: [{ id: 2527101, name: 'MEP AMC service work' }],
+  2762862: [{ id: 2527100, name: 'Lap pool Maintenance work' }],
+  2762861: [{ id: 2527099, name: 'Joinery' }],
+  2762860: [{ id: 2527098, name: 'HVAC' }],
+  2762859: [{ id: 2527097, name: 'House Keeping' }],
+  2762857: [{ id: 2527096, name: 'Fire Safety work' }],
+  2762856: [{ id: 2527095, name: 'Energy work' }],
+  2762855: [{ id: 2527094, name: 'Electrical work' }],
+  2762854: [{ id: 2527093, name: 'Cleaning work' }],
+  2762852: [{ id: 2527092, name: 'Aluminium work' }],
+  2762851: [{ id: 2527091, name: 'Access control work' }],
+  2762849: [{ id: 2527073, name: 'Hvac Work' }],
+  2762823: [{ id: 2521156, name: 'Hvac work' }],
+  2762858: [{ id: 2527072, name: 'Gym Work' }],
+  2762853: [{ id: 2521155, name: 'Civil work' }],
+  2762880: [{ id: 2527102, name: 'Others' }],
+  2762865: [{ id: 2527102, name: 'Others' }]
+};
+
+
+const CATEGORY_PROBLEM_MATRIX = {
+
+  /* =========================
+     MEP AMC service (2762864)
+  ========================== */
+  2762864: [
+    { id: 2613311, name: 'Repeated failures despite AMC coverage' },
+    { id: 2613310, name: 'Essential services downtime (power/water)' },
+    { id: 2613309, name: 'Delay in AMC technician response' },
+    { id: 2613308, name: 'Fire alarm false alarms' },
+    { id: 2613307, name: 'Water leakage not permanently fixed' },
+    { id: 2613306, name: 'Frequent power trips' }
+  ],
+
+  /* =========================
+     Maid service (2762863)
+  ========================== */
+  2762863: [
+    { id: 2613305, name: 'Repeated complaints without resolution' },
+    { id: 2613304, name: 'Damage to belongings during cleaning' },
+    { id: 2613303, name: 'Maid staff unavailable' },
+    { id: 2613302, name: 'Bad odor due to improper waste disposal' },
+    { id: 2613301, name: 'Cleaning schedule missed' },
+    { id: 2613300, name: 'Common areas not cleaned properly' }
+  ],
+
+  /* =========================
+     Lap pool Maintenance (2762862)
+  ========================== */
+  2762862: [
+    { id: 2613299, name: 'Poor hygiene around pool area' },
+    { id: 2613298, name: 'Pool lights not working' },
+    { id: 2613297, name: 'Slippery poolside flooring' },
+    { id: 2613296, name: 'Pool frequently closed for maintenance' },
+    { id: 2613295, name: 'Strong chemical smell from pool' },
+    { id: 2613294, name: 'Pool water looks dirty or cloudy' }
+  ],
+
+  /* =========================
+     Others (2762880 / 2762865)
+  ========================== */
+  2762880: [
+    { id: 2613293, name: 'Difficulty tracking service request' },
+    { id: 2613292, name: 'Temporary fix leading to repeat issues' },
+    { id: 2613291, name: 'Work done at inconvenient hours' },
+    { id: 2613290, name: 'Technician arrives without prior notice' },
+    { id: 2613289, name: 'Poor communication on issue status' },
+    { id: 2613288, name: 'Delay in service request resolution' }
+  ],
+
+  /* =========================
+     A/C duct cleaning (2762849)
+  ========================== */
+  2762849: [
+    { id: 2613287, name: 'Bad smell from air vents' },
+    { id: 2613284, name: 'Water leaking from AC unit' }
+  ],
+
+  /* =========================
+     A/C service (2762823)
+  ========================== */
+  2762823: [
+    { id: 2613286, name: 'Loud noise from AC unit' },
+    { id: 2613285, name: 'Uneven cooling across rooms' },
+    { id: 2613283, name: 'Sudden AC breakdown' },
+    { id: 2613282, name: 'AC not cooling properly' }
+  ],
+
+  /* =========================
+     Gym (2762858)
+  ========================== */
+  2762858: [
+    { id: 2424143, name: 'Others' },
+    { id: 2424142, name: 'Cleaning' },
+    { id: 2424141, name: 'Equipment' }
+  ],
+
+  /* =========================
+     Swimming pool (2762867)
+  ========================== */
+  2762867: [
+    { id: 2424140, name: 'Other' },
+    { id: 2424139, name: 'Pool Cloudy' },
+    { id: 2424138, name: 'Pool Tile Damages' },
+    { id: 2424137, name: 'Pool Dirty' }
+  ],
+
+  /* =========================
+     Access control (2762851)
+  ========================== */
+  2762851: [
+    { id: 2424136, name: 'Other' },
+    { id: 2424135, name: 'Common Area Access' },
+    { id: 2424134, name: 'Main Door Passcode' },
+    { id: 2424133, name: 'Main Door Lock' }
+  ],
+
+  /* =========================
+     Cleaning (2762854)
+  ========================== */
+  2762854: [
+    { id: 2424132, name: 'Other' },
+    { id: 2424131, name: 'Reception' },
+    { id: 2424130, name: 'Lift' },
+    { id: 2424129, name: 'Parking' },
+    { id: 2424128, name: 'Corridor' }
+  ],
+
+  /* =========================
+     Plumbing (2762866)
+  ========================== */
+  2762866: [
+    { id: 2424127, name: 'Other' },
+    { id: 2424126, name: 'Shower Mixer Issue' },
+    { id: 2424125, name: 'Foul Odor from Drains' },
+    { id: 2424124, name: 'Water Heater Malfunction' },
+    { id: 2424123, name: 'Low Water Pressure' },
+    { id: 2424122, name: 'Water Leakage (Pipes, Faucets, Toilets)' },
+    { id: 2424121, name: 'Drainage Blockage' },
+    { id: 2424120, name: 'Bottle Trap Issue' },
+    { id: 2424119, name: 'Flush Tank Issue' }
+  ],
+
+  /* =========================
+     Electrical (2762855)
+  ========================== */
+  2762855: [
+    { id: 2424118, name: 'Other' },
+    { id: 2424117, name: 'Light Fixture Damage' },
+    { id: 2424116, name: 'Flickering Lights' },
+    { id: 2424115, name: 'Bulb Replacement' },
+    { id: 2424114, name: 'Mirror Light' },
+    { id: 2424113, name: 'Non-Functional Doorbell' },
+    { id: 2424112, name: 'Short Circuit' },
+    { id: 2424111, name: 'Electrical Sockets' },
+    { id: 2424110, name: 'Electrical Sparks' },
+    { id: 2424109, name: 'Power Failure in Unit' },
+    { id: 2424108, name: 'Circuit Breaker Tripping' }
+  ],
+
+  /* =========================
+     HVAC (2762860)
+  ========================== */
+  2762860: [
+    { id: 2424107, name: 'Other' },
+    { id: 2424106, name: 'Overcooling Issue' },
+    { id: 2424105, name: 'Smell Coming from AC' },
+    { id: 2424104, name: 'AC Not Turning On' },
+    { id: 2424103, name: 'Noises from AC' },
+    { id: 2424102, name: 'Thermostat Issue' },
+    { id: 2424101, name: 'AC Water Leakage' },
+    { id: 2424100, name: 'AC Not Cooling' }
+  ],
+
+  /* =========================
+     Joinery (2762861)
+  ========================== */
+  2762861: [
+    { id: 2424099, name: 'Other' },
+    { id: 2424098, name: 'Shelves' },
+    { id: 2424097, name: 'Loose Hinges' },
+    { id: 2424096, name: 'Wardrobe Door Issue' },
+    { id: 2424095, name: 'Cabinet Issue' },
+    { id: 2424094, name: 'Door Alignment' },
+    { id: 2424093, name: 'Door Handle Issue' }
+  ],
+
+  /* =========================
+     Aluminium (2762852)
+  ========================== */
+  2762852: [
+    { id: 2424092, name: 'Other' },
+    { id: 2424091, name: 'Sliding Door Lock' },
+    { id: 2424090, name: 'Broken glass' }
+  ],
+
+  /* =========================
+     Civil (2762853)
+  ========================== */
+  2762853: [
+    { id: 2424089, name: 'Other' },
+    { id: 2424088, name: 'Wooden Floor Scratches' },
+    { id: 2424087, name: 'Broken or Chipped Tile' },
+    { id: 2424086, name: 'Tile Slope Issue' },
+    { id: 2424085, name: 'Uneven Tile' },
+    { id: 2424084, name: 'Water Damage Stains' },
+    { id: 2424083, name: 'Gypsum Board Damage' },
+    { id: 2424082, name: 'Ceiling Paint Peeling' },
+    { id: 2424081, name: 'Ceiling Cracks' },
+    { id: 2424080, name: 'Ceiling Leakage' },
+    { id: 2424079, name: 'Water Stains on Walls' },
+    { id: 2424078, name: 'Mold and Mildew Growth' },
+    { id: 2424077, name: 'Wall Painting' },
+    { id: 2424076, name: 'Wall Cracks' },
+    { id: 2424075, name: 'Wall Seepage' }
+  ]
+};
+
+const normalize = s => (s || '').toString().trim().toLowerCase();
+const normalizeAlnumTokens = s =>
+  (s || '').toString().toLowerCase().replace(/[^a-z0-9]+/g,' ')
+    .trim().split(/\s+/).filter(Boolean);
+
+const MAX_ATTACHMENTS = 5;
+const ALLOWED_ATTACHMENT_TYPES = ['image/jpeg','image/png','image/gif','application/pdf'];
+
+function debounce(fn, delay) {
+  let t = null;
+  return function(...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+try {
+window.__publicFormVM = new Vue({
+  el: '#app',
+  data: {
+    serviceRequestType: '',
+    form: {
+      subject: '',
+      description: '',
+      requestorName: '',
+      contactNumber: '',
+      email: '',
+      residenceType: '',
+      preferredDateTime: '',
+    },
+    selectedBuildingId: null,
+    attachments: [],
+    sites: [],
+    buildings: [],
+    spaces: [],
+
+    selectedSite: null,
+    selectedSpace: null,
+    spaceQuery: '',
+    showSpaceSuggestions: false,
+    subcategoryMappings: [],
+    problems: [],
+
+    selectedCategory: null,
+    selectedSubcategory: null,
+    selectedProblem: null,
+
+    isLoading: false,
+    isSubmitting: false,
+    formSubmitted: false,
+
+    showDebug: false,
+    lastCategoryResponse: null,
+    lastMappingsResponse: null,
+    lastMappingsAllResponse: null,
+    lastProblemResponse: null,
+    lastProblemAllResponse: null,
+
+    lastSpaceSearchBuildingId: null
+  },
+  mounted() {
+    try {
+      const el = document.getElementById('js-check');
+      if (el) el.style.display = 'none';
+    } catch(e){}
+
+    try {
+      window.facilioApp = FacilioAppSDK.init();
+      window.facilioApp.on('app.loaded', () => {
+        this.getSites();
+        try { this.applyInitialUrlParams(); } catch (e) { console.debug('applyInitialUrlParams failed', e); }
+      });
+    } catch (err) {
+      console.warn('Facilio SDK init failed', err);
+    }
+
+    // Expose VM for debugging in DevTools: `window.__publicFormVM` will reference the Vue instance
+    try { window.__publicFormVM = this; } catch (e) { /* ignore */ }
+
+    this.debouncedFetchSpaces = debounce(this.fetchSpacesForQuery, 300);
+  },
+  computed: {
+  filteredSpaces() {
+    if (!this.spaceQuery) return this.spaces || [];
+
+    const q = this.spaceQuery.toLowerCase();
+    return (this.spaces || []).filter(s =>
+      s.name && s.name.toLowerCase().includes(q)
+    );
+  },
+
+  categoryOptions() {
+    if (!this.serviceRequestType) return [];
+    return REQUEST_TYPE_CATEGORY_MATRIX[this.serviceRequestType] || [];
+  },
+
+  // ✅ ADD THIS
+  selectedBuilding() {
+  return this.buildings.find(
+    b => String(b.id) === String(this.selectedBuildingId)
+  ) || null;
+  }
+},
+  methods: {
+    extractIdFromResponse(res) {
+      try {
+        if (!res) return null;
+        // Handle array-style responses, e.g. [{ id: 123, ... }]
+        if (Array.isArray(res) && res.length) {
+          const first = res[0];
+          if (first && (first.id || first.fileId || first.file_id || (first.data && (first.data.id || first.data.fileId || first.data.file_id)))) {
+            const fid = first.id || first.fileId || first.file_id || (first.data && (first.data.id || first.data.fileId || first.data.file_id));
+            return fid != null ? String(fid) : null;
+          }
+        }
+        // If `res.data` is an array (many APIs return data: [{...}])
+        if (res.data && Array.isArray(res.data) && res.data.length) {
+          const f = res.data[0];
+          if (f && (f.id || f.fileId || f.file_id)) return String(f.id || f.fileId || f.file_id);
+        }
+        // Some APIs return the uploaded file info under `file_upload_serviceRequest` (link name)
+        const fus = res.file_upload_serviceRequest || (res.data && res.data.file_upload_serviceRequest);
+        if (fus) {
+          if (Array.isArray(fus) && fus.length) {
+            const first = fus[0];
+            if (first && (first.id || first.fileId || first.file_id)) return String(first.id || first.fileId || first.file_id);
+            if (typeof first === 'number' || typeof first === 'string') return String(first);
+          }
+          if (typeof fus === 'object') {
+            if (fus.id || fus.fileId || fus.file_id) return String(fus.id || fus.fileId || fus.file_id);
+          }
+          if (typeof fus === 'number' || typeof fus === 'string') return String(fus);
+        }
+        if (typeof res === 'string') {
+          const m = res.match(/(\d+)(?!.*\d)/);
+          return m ? m[1] : null;
+        }
+
+        // Common direct fields
+        const direct = [
+          res.id,
+          res.fileId,
+          res.file_id,
+          res.data && res.data.id,
+          res.data && res.data.fileId,
+          res.data && res.data.file_id,
+          res.downloadUrl,
+          res.download_url,
+          res.data && res.data.downloadUrl,
+          res.data && res.data.download_url,
+          res.file_upload_serviceRequestDownloadUrl,
+          res.data && res.data.file_upload_serviceRequestDownloadUrl
+        ];
+        for (const v of direct) {
+          if (!v && v !== 0) continue;
+          if (typeof v === 'number') return String(v);
+          if (typeof v === 'string') {
+            const m = v.match(/\/download\/(\d+)/);
+            if (m) return m[1];
+            const m2 = v.match(/(\d+)(?!.*\d)/);
+            if (m2) return m2[1];
+          }
+        }
+
+        // Fallback: search serialized response for a download id
+        const s = JSON.stringify(res || {});
+        const m = s.match(/\/download\/(\d+)/);
+        if (m) return m[1];
+        const m2 = s.match(/(\d{5,})/);
+        return m2 ? m2[1] : null;
+      } catch (e) {
+        return null;
+      }
+    },
+    getSites() {
+      window.facilioApp.request.invokeFacilioAPI('/v3/modules/site/view/all', { method: 'GET' })
+        .then(r => { this.sites = (r && r.data && r.data.site) || []; })
+        .catch(err => console.error('getSites error', err));
+    },
+
+    applyInitialUrlParams() {
+      try {
+        const parseKeyed = (str) => {
+          try { return new URLSearchParams(str); } catch (e) { return null; }
+        };
+        const params = new URLSearchParams(window.location.search || '');
+        if (window.location.hash && window.location.hash.length > 1) {
+          const h = window.location.hash.replace(/^#/, '');
+          const hParams = parseKeyed(h);
+          if (hParams) {
+            for (const k of ['siteId','buildingId']) {
+              if (!params.get(k) && hParams.get(k)) params.set(k, hParams.get(k));
+            }
+          }
+        }
+
+        const siteId = params.get('siteId');
+        const buildingId = params.get('buildingId');
+        if (!siteId) return;
+
+        const trySelectSite = (id) => {
+          if (!id) return;
+          const found = (this.sites || []).find(s =>
+            s && (String(s.id) === String(id) || String(s.siteId || s._id) === String(id))
+          );
+          if (found) {
+            this.selectedSite = found;
+            try { this.onSiteChange(); } catch (e) { console.debug('onSiteChange err', e); }
+            if (buildingId) {
+              const selectBuildingWhenReady = () => {
+                if ((this.buildings || []).length) {
+                  const bfound = (this.buildings || []).find(b =>
+                    b && (String(b.id) === String(buildingId) || String(b.buildingId || b._id) === String(buildingId))
+                  );
+                  if (bfound) {
+                    this.selectedBuildingId = bfound.id;
+                    this.$nextTick(() => {
+                      this.onBuildingChange();
+                    });
+                    return true;
+                  }
+                }
+                return false;
+              };
+              if (!selectBuildingWhenReady()) {
+                const unwatch = this.$watch('buildings', (nv) => {
+                  if (selectBuildingWhenReady()) { try { unwatch(); } catch(e){} }
+                });
+              }
+            }
+            return true;
+          }
+          return false;
+        };
+
+        if (!trySelectSite(siteId)) {
+          const unwatchSites = this.$watch('sites', (nv) => {
+            if (nv && nv.length) {
+              try { if (trySelectSite(siteId)) { try { unwatchSites(); } catch(e){} } } catch(e){}
+            }
+          });
+        }
+      } catch (e) { console.debug('applyInitialUrlParams error', e); }
+    },
+onSiteChange() {
+  this.buildings = [];
+  this.spaces = [];
+this.selectedBuildingId = null;
+  this.selectedSpace = null;
+
+  if (!this.selectedSite || !this.selectedSite.id) return;
+
+  window.facilioApp.request
+    .invokeFacilioAPI(
+      `/v3/modules/building/view/all?siteId=${this.selectedSite.id}`,
+      { method: 'GET' }
+    )
+    .then(r => {
+      this.buildings = (r && r.data && r.data.building) || [];
+    })
+    .catch(err => console.error('Building fetch failed', err));
+},
+    onBuildingChange() {
+          this.spaces = [];
+      this.spaceQuery = '';
+      this.selectedSpace = null;
+
+      if (!this.selectedSite || !this.selectedBuilding) return;
+
+      // Fetch initial spaces without search
+      this.fetchSpacesForQuery('');
+    },
+
+    onSpaceInput() {
+      this.showSpaceSuggestions = true;
+
+      if (!this.selectedSite || !this.selectedSite.id ||
+          !this.selectedBuilding || !this.selectedBuilding.id) {
+        this.spaces = [];
+        return;
+      }
+
+      const q = (this.spaceQuery || '').trim();
+      if (!q) {
+        this.spaces = [];
+        return;
+      }
+
+      this.debouncedFetchSpaces(q);
+    },
+
+    onSpaceBlur() {
+      setTimeout(() => { this.showSpaceSuggestions = false; }, 150);
+    },
+
+    selectSpaceFromList(s) {
+      this.selectedSpace = s;
+      this.spaceQuery = s.name;
+      this.showSpaceSuggestions = false;
+    },
+
+    useTypedSpace() {
+      this.selectedSpace = { id: null, name: this.spaceQuery };
+      this.showSpaceSuggestions = false;
+    },
+
+    async fetchSpacesForQuery(query) {
+      const siteId = this.selectedSite && this.selectedSite.id;
+      const buildingId = this.selectedBuilding && this.selectedBuilding.id;
+      if (!siteId || !buildingId) return;
+
+      this.isLoading = true;
+      try {
+        const encodedQ = encodeURIComponent(query);
+        let url =
+          `/v3/modules/space/view/all` +
+          `?siteId=${siteId}` +
+          `&buildingId=${buildingId}` +
+          `&page=0&size=50&viewName=all&moduleName=space`;
+
+        if (query) {
+          url += `&search=${encodeURIComponent(query)}`;
+        }
+        console.debug('fetchSpacesForQuery', url);
+        const r = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+
+        let items = [];
+
+        if (r && r.data) {
+          if (Array.isArray(r.data.space)) items = r.data.space;
+          else if (Array.isArray(r.data.content)) items = r.data.content;
+          else if (Array.isArray(r.data.data)) items = r.data.data;
+          else if (Array.isArray(r.data)) items = r.data;
+        }
+
+
+        if (!Array.isArray(items)) items = [];
+
+        if (!this.selectedBuilding ||
+            String(this.selectedBuilding.id) !== String(buildingId)) {
+          console.debug('fetchSpacesForQuery: building changed, discard result');
+          return;
+        }
+
+        this.spaces = items;
+      } catch (err) {
+        console.error('Error fetching spaces for query', query, err);
+        this.spaces = [];
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+onCategoryChange() {
+  this.selectedSubcategory = null;
+  this.selectedProblem = null;
+
+  if (!this.selectedCategory) {
+    this.subcategoryMappings = [];
+    this.problems = [];
+    return;
+  }
+
+  const subcategoryIds =
+    CATEGORY_SUBCATEGORY_MATRIX[this.selectedCategory.id] || [];
+
+  this.subcategoryMappings = subcategoryIds;
+
+  this.problems = [];
+},
+onSubcategoryChange() {
+  this.selectedProblem = null;
+
+  if (!this.selectedCategory) {
+    this.problems = [];
+    return;
+  }
+
+  this.problems =
+    CATEGORY_PROBLEM_MATRIX[this.selectedCategory.id] || [];
+},
+
+
+    extractProblemsArray(r) {
+      let arr =
+        (r && r.data && r.data.custom_problemstatement) ||
+        (r && r.data && r.data.content) ||
+        (r && r.data && r.data.data) ||
+        (Array.isArray(r && r.data) ? r.data : null);
+
+      if (!arr && r && r.data) {
+        const dataObj = r.data;
+        for (const k of Object.keys(dataObj)) {
+          if (Array.isArray(dataObj[k])) {
+            arr = dataObj[k];
+            break;
+          }
+        }
+      }
+      return Array.isArray(arr) ? arr : [];
+    },
+
+  //  --- Attachments: upload via publicAddFile and capture IDs ---
+    // async addFile(file) {
+    //   const MAX_SIZE = 10 * 1024 * 1024;
+    //   if (file.size > MAX_SIZE) {
+    //     return { error: { message: "File size exceeds 10 MB"} };
+    //   }
+    //   // If page provides a custom uploader `uploadFiles(file)`, prefer it first
+    //   try {
+    //     if (typeof window.uploadFiles === 'function') {
+    //       try {
+    //         const customRes = await window.uploadFiles(file);
+    //         console.debug('uploadFiles (custom) returned', customRes);
+    //         if (customRes && !customRes.error) return customRes;
+    //         // if custom returned an error-like shape, continue to fallback flows
+    //         if (customRes && customRes.error) console.warn('Custom uploadFiles returned error, falling back', customRes);
+    //       } catch (errCustom) {
+    //         console.warn('uploadFiles(file) threw or rejected, falling back to SDK flows', errCustom);
+    //       }
+    //     }
+    //   } catch (e) {
+    //     console.debug('Error while trying custom uploadFiles', e);
+    //   }
+
+    //   // read base64 only if needed for SDK uploads
+    //   const base64Data = await new Promise((resolve, reject) => {
+    //     const reader = new FileReader();
+    //     reader.onload = () => {
+    //       const base64 = reader.result.split(',')[1];
+    //       resolve(base64);
+    //     };
+    //     reader.onerror = reject;
+    //     reader.readAsDataURL(file);
+    //   });
+
+    //   try {
+    //     // Try the friend's suggested param shape first (name,type,size,encoding,data)
+    //     const paramsNew = {
+    //     name: file.name,
+    //     type: file.type || 'application/octet-stream',
+    //     size: file.size,
+    //     encoding: 'base64',
+    //     data: base64Data,
+
+    //     moduleName: 'serviceRequest',                 // ✅ REQUIRED
+    //     fieldName: 'picture_serviceRequest'        // ✅ REQUIRED
+    //   };
+    //     let res = null;
+    //     try {
+    //       res = await window.facilioApp.interface.trigger("publicAddFile", paramsNew);
+    //       console.debug('publicAddFile success (new params)', res);
+    //     } catch (errNew) {
+    //       console.warn('publicAddFile with new params failed, will retry with legacy param (fileContent)', errNew);
+    //     }
+
+    //     // If new-res didn't return an id-like shape, try legacy param `fileContent` as a fallback
+    //     const maybeId = this.extractIdFromResponse(res);
+    //     if (!maybeId) {
+    //      const paramsLegacy = { name: file.name, fileContent: base64Data };
+    //       try {
+    //         const res2 = await window.facilioApp.interface.trigger("publicAddFile", paramsLegacy);
+    //         console.debug('publicAddFile success (legacy params)', res2);
+    //         // prefer res2 if it contains id-like info
+    //         if (this.extractIdFromResponse(res2)) return res2;
+    //         // otherwise return whichever response we received (res2 if present, else res)
+    //         return res2 || res || { error: { message: 'Upload returned no id' } };
+    //       } catch (errLegacy) {
+    //         console.error('publicAddFile error (legacy params)', errLegacy);
+    //         // if we had an earlier response (res) return that, else surface the error
+    //         if (res) return res;
+    //         return { error: { message: errLegacy && errLegacy.message ? errLegacy.message : 'Upload failed' } };
+    //       }
+    //     }
+
+    //     return res;
+    //   } catch (err) {
+    //     // Log error with safe serialization to see underlying SDK error
+    //     let ser = null;
+    //     try { ser = JSON.parse(JSON.stringify(err)); } catch (e) { try { ser = String(err); } catch (e2) { ser = err; } }
+    //     console.error('publicAddFile error', err, 'serialized:', ser);
+    //     return { error: { message: err && err.message ? err.message : 'Upload failed' } };
+    //   }
+    // },
+    async addFile(file) {
+        const MAX_SIZE = 10 * 1024 * 1024; // 10 MB in bytes
+        if (file.size > MAX_SIZE) {
+          return { error: { message: "File size exceeds 10 MB"} };
+        }
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = reader.result.split(',')[1]; // Remove data:*/*;base64, part
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+ 
+        const params = {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          encoding: 'base64',
+          data: base64Data
+        };
+        return await window.facilioApp.interface.trigger("publicAddFile", params);
+      },
+    async handleFileInput(e) {
+      let files = Array.from(e.target.files || []);
+      const allowedSlots = Math.max(0, MAX_ATTACHMENTS - (this.attachments || []).length);
+      if (allowedSlots <= 0) {
+        alert('Maximum ' + MAX_ATTACHMENTS + ' attachments allowed');
+        e.target.value = '';
+        return;
+      }
+      if (files.length > allowedSlots) {
+        alert('Only ' + allowedSlots + ' more file(s) allowed — additional files will be ignored');
+        files = files.slice(0, allowedSlots);
+      }
+
+      for (const f of files) {
+        const allowed = !f.type ? true : ALLOWED_ATTACHMENT_TYPES.some(t => {
+          if (t.endsWith('/*')) return f.type.startsWith(t.replace('/*','/'));
+          return f.type === t;
+        }) || f.type.startsWith('image/');
+        if (!allowed) {
+          alert('File "' + f.name + '" not an allowed type. Allowed: images and PDF.');
+          continue;
+        }
+        const placeholder = { name: f.name, uploading: true };
+        this.attachments.push(placeholder);
+        const idx = this.attachments.length - 1;
+        try {
+          const res = await this.addFile(f);
+          console.debug('addFile response for', f.name, res);
+          if (res && res.error) {
+            // Safely stringify reactive/error objects for clearer logging
+            let serialized = null;
+            try { serialized = JSON.parse(JSON.stringify(res)); } catch (e) { try { serialized = String(res); } catch (e2) { serialized = res; } }
+            const errMsg = (res && res.error && (res.error.message || res.error.msg || (typeof res.error === 'string' ? res.error : null))) || 'Upload failed';
+            const obj = { name: f.name, error: errMsg, raw: res, uploading: false };
+            console.warn('publicAddFile returned error for', f.name, '— serialized:', serialized, 'raw:', res);
+            this.$set(this.attachments, idx, obj);
+          } else {
+            // Extract ID from res or res.data.id
+            const id = this.extractIdFromResponse(res) || (res && res.id) || (res && res.fileId) || (res && res.data && (res.data.id || res.data.fileId || res.data.file_id)) || null;
+            const attachmentObj = { name: f.name, raw: res, mime: f.type, uploading: false };
+            if (id) {
+              attachmentObj.id = id;
+              attachmentObj.status = 'uploaded';
+            } else {
+              attachmentObj.status = 'no-id';
+              console.warn('Upload succeeded but no id extracted for', f.name, 'response:', res);
+            }
+            console.debug('final attachment object', attachmentObj);
+            this.$set(this.attachments, idx, attachmentObj);
+          }
+          // Log current attachments array (helpful because Vue wraps objects)
+          try { console.debug('Attachments array now:', JSON.parse(JSON.stringify(this.attachments))); } catch(e) { console.debug('Attachments (raw)', this.attachments); }
+        } catch (err) {
+          console.error('addFile threw', err);
+          this.$set(this.attachments, idx, { name: f.name, error: err && err.message ? err.message : 'Upload failed' });
+        }
+      }
+      e.target.value = '';
+    },
+
+    removeAttachment(index) {
+      if (index >= 0 && index < this.attachments.length) this.attachments.splice(index, 1);
+    },
+
+    onSubmit() {
+      if (this.isSubmitting) return;
+      this.isSubmitting = true;
+
+      const siteId = this.selectedSite && this.selectedSite.id;
+      const buildingId = this.selectedBuilding && this.selectedBuilding.id;
+      const spaceId = this.selectedSpace && this.selectedSpace.id;
+
+      const attachmentIds = this.attachments
+        .map(a => a.id || a.fileId || a.file_id || a.dataId || null)
+        .filter(Boolean);
+
+      if (this.attachments.length && !attachmentIds.length) {
+        alert('Attachments were added but not uploaded successfully. Please wait or re-upload.');
+        this.isSubmitting = false;
+        return; // ⛔ STOP SUBMISSION HERE
+      }
+
+
+      // Build data object without sending explicit nulls (some APIs reject nulls)
+      const data = {
+        subject: this.form.subject || undefined,
+        description: this.form.description || undefined,
+        requestType: this.serviceRequestType === 'Maintenance' ? 2 : 1,
+        requestor_name_serviceRequest: this.form.requestorName || undefined,
+        preferred_date___time_serviceRequest: this.form.preferredDateTime
+        ? (() => {
+            const [datePart, timePart] = this.form.preferredDateTime.split('T');
+            const [year, month, day] = datePart.split('-').map(Number);
+            const [hour, minute] = timePart.split(':').map(Number);
+
+            // Create LOCAL datetime (month is 0-based)
+            return new Date(year, month - 1, day, hour, minute, 0, 0).getTime();
+          })()
+        : undefined,
+        residence_serviceRequest: this.form.residenceType === 'Tenant' ? 2 : 1,
+        // Primary (new) link names
+        requestor_contact_number_serviceRequest: this.form.contactNumber || undefined,
+        requestor_email_serviceRequest: this.form.email || undefined,
+        // Fallback/compatibility keys (older variants some APIs expect)
+        requester_contact_serviceRequest: this.form.contactNumber || undefined,
+        requester_contact_number_serviceRequest: this.form.contactNumber || undefined,
+        requester_email_serviceRequest: this.form.email || undefined,
+        formId: 49897,
+        actionFormId: 49897,
+        picture_serviceRequest: undefined
+      };
+
+      if (siteId) data.siteId = siteId;
+      if (buildingId) data.building_serviceRequest = { id: buildingId };
+      if (spaceId) data.resource = { id: spaceId };
+      if (this.selectedCategory && this.selectedCategory.id) data.category_serviceRequest_1 = { id: this.selectedCategory.id };
+      if (this.selectedSubcategory && this.selectedSubcategory.id) data.sub_category_serviceRequest = { id: this.selectedSubcategory.id };
+      if (this.selectedProblem && this.selectedProblem.id) data.problem_serviceRequest = { id: this.selectedProblem.id };
+
+      // Convert attachment IDs to array of objects (common API shape: [{id:123}, ...])
+      if (attachmentIds && attachmentIds.length) {
+        const fileUploadField = attachmentIds.map(id => {
+          const n = Number(id);
+          return { id: Number.isFinite(n) ? n : id };
+        });
+        data.picture_serviceRequest = fileUploadField;
+      }
+
+      const payload = { data, moduleName: 'serviceRequest' };
+      console.debug('Final payload for submission:', payload);
+
+      console.debug('Submitting serviceRequest', {
+        subject: payload.data.subject,
+        requestType: payload.data.requestType,
+        picture_serviceRequest: payload.data.picture_serviceRequest
+      });
+
+      // Use Facilio API when available, otherwise fallback to a test POST so local testing works
+const doSuccessCleanup = () => {
+  this.formSubmitted = true;
+
+  this.form.subject = '';
+  this.form.description = '';
+  this.form.requestorName = '';
+  this.form.contactNumber = '';
+  this.form.email = '';
+
+  this.selectedSite = null;
+  this.selectedBuildingId = '';
+  this.selectedSpace = null;
+  this.spaceQuery = '';
+  this.selectedCategory = null;
+  this.selectedSubcategory = null;
+  this.selectedProblem = null;
+  this.subcategoryMappings = [];
+  this.problems = [];
+  this.form.preferredDateTime = '';
+  this.form.residenceType = '';
+  this.attachments = [];
+
+  this.isSubmitting = false; // ✅ FIX
+
+  setTimeout(() => { this.formSubmitted = false; }, 4000);
+};
+
+      const fallbackPost = (originErr) => {
+        console.warn('Falling back to test POST due to error from Facilio SDK:', originErr);
+        return fetch('https://httpbin.org/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        .then(r => {
+          if (!r.ok) throw new Error('Network response not ok: ' + r.status);
+          return r.json();
+        })
+        .then(() => {
+          doSuccessCleanup();
+        })
+        .catch(err => {
+          console.error('submit error (fallback)', err, 'originErr:', originErr);
+          alert('Submit failed: ' + (err && err.message ? err.message : JSON.stringify(err)) + '\n\nSee console for full error object and stack.');
+        })
+        .finally(() => { this.isSubmitting = false; });
+      };
+
+      if (window.facilioApp && window.facilioApp.request && typeof window.facilioApp.request.invokeFacilioAPI === 'function') {
+        try {
+          const sdkResult = window.facilioApp.request.invokeFacilioAPI('/v3/modules/serviceRequest', { method: 'POST', data: payload });
+          Promise.resolve(sdkResult)
+            .then(() => { doSuccessCleanup(); })
+            .catch(err => {
+              console.error('Facilio invoke failed (promise rejection)', err, 'props:', (() => { try { return JSON.stringify(err, Object.getOwnPropertyNames(err)); } catch(e) { return String(err); } })());
+              return fallbackPost(err);
+            })
+            .finally(() => { /* isSubmitting handled in fallbackPost or success cleanup */ });
+        } catch (err) {
+          console.error('invokeFacilioAPI threw synchronously', err);
+          fallbackPost(err);
+        }
+      } else {
+        console.debug('Facilio SDK not available — performing fallback POST to https://httpbin.org/post for testing');
+        fallbackPost(null);
+      }
+    }
+  }
+});
+} catch (e) {
+  console.error('Vue init failed', e);
+  try {
+    const el = document.getElementById('js-check');
+    if (el) {
+      el.style.display = 'block';
+      el.innerText = 'JavaScript error during init: ' + (e && e.message ? e.message : String(e));
+    }
+  } catch (e2) { console.error('Failed to show init error', e2); }
+}
+</script>

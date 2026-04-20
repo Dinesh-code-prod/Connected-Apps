@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>QR Code Generator</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+
+<div style="max-width:1400px;margin:24px auto;font-family:Arial,Helvetica,sans-serif;">
+  <h2>Generate QR for Sites</h2>
+
+  <div style="margin-bottom:16px;display:flex;gap:12px;">
+    <button onclick="downloadAllAsZip()">Download ALL as ZIP</button>
+    <button onclick="printAllQRCodes()">Print ALL</button>
+  </div>
+
+  <div id="cards"
+       style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+  </div>
+</div>
+
+<script>
+const BASE_URL = 'https://masaken.faciliopublic.ae/publicportal/';
+
+const SITES = [
+ 
+
+  {siteId:'1079525', name:'Binghatti Apartments Site', hash:'ogy0n2jimmmtm2uznc00ndlkltlhy2itotvmnzu4ngeymtq1oje1ng' },
+    { siteId:'1124569', name:'Binghatti Aurora Site', hash:'mtm0mzi5ywytnwnlos00ztu0lwi3mgutzmu2ndhlmwu0ngq5oje1nw' },
+    { siteId:'1079523', name:'Binghatti Azure Site', hash:'nmnkntbkmdqtnjrimi00mwzklwi1ntatyzczzdk0zgy4yjbjoje1oa' },
+    { siteId:'1079536', name:'Binghatti Canal Site', hash:'njc2nwq5mjaty2ezmi00mzyzlwi1m2etzti2ngqwzmvjotzjoje1oq' },
+    { siteId:'1079532', name:'Binghatti Corner Site', hash:'yjq0n2uymmitntk3my00y2e0lwe4n2etmjkxymjjzdg3zgqyoje2ma' },
+    { siteId:'1079513', name:'Binghatti Creek Site', hash:'ymi4mjhiywutyjbizs00mtvilweyztatnzriowjkzjq5mmuwoje2mq' },
+    { siteId:'1079533', name:'Binghatti Crescent Site', hash:'mti4zdc4mzctzmm0ns00ywqxltk3nmitmjnmodexngfkymiwoje2mg' },
+    { siteId:'1079528', name:'Binghatti Crest Site', hash:'y2uxnwezzdutn2i1nc00otcxltllywitntkyytk3nzc2nzvloje2mw' },
+    { siteId:'1079511', name:'Binghatti Dawn Site', hash:'zjqwzgzlndutntq0zs00zdnilweyztqtzdu3mwqzmjvim2i1oje2na' },
+    { siteId:'1079512', name:'Binghatti Dusk Site', hash:'nze5mtlingytnzg2yi00mwq1ltgwmtktyta4mdg0mmvmzgrkoje2nq' },
+    { siteId:'1079524', name:'Binghatti East Site', hash:'mja2odk3ndutzmfjyy00n2i3lwfmzmitntmzy2q4m2iymtfmoje2ng' },
+    { siteId:'1079529', name:'Binghatti Emerald Site', hash:'mzizntjkyzmtn2yxms00ymi2lwi2mgetmgqxmzawntljzmiwoje2nw' },
+    { siteId:'1079534', name:'Binghatti Galaxy Site Tower A', hash:'zwqzndkzodutnwfhos00yzu0ltgznjetzji2odiznjrhogq4oje2oa' },
+    { siteId:'1079535', name:'Binghatti Galaxy Site Tower B', hash:'yjnimjfhywutnmq4mi00mdc4ltk1yjatywqymmi5ymq1zwrhoje2oq' },
+    { siteId:'1079537', name:'Binghatti Gardenia Site', hash:'ytvizwzkm2qtn2y1ys00mjc3lwjhyjitymi3zgiwyjfmzge2oje3ma' },
+    { siteId:'1079527', name:'Binghatti Gateway Site', hash:'ztzjytvimgytn2vmos00m2i2ltg2yjatyzjkodu4mtllytezoje3mq' },
+    { siteId:'1079510', name:'Binghatti Gems Site', hash:'yzvlndc0ymetzmi3yi00nji3lwfimdgtzdcxmjq3njbkotc1oje3mg' },
+    { siteId:'1079519', name:'Binghatti H-Hotel Site', hash:'zju4ngrkotatztcwzc00m2qylwjjyjgtyjg5nzhimze5nmjmoje3mw' },
+    { siteId:'1079520', name:'Binghatti Heights Site', hash:'zdjmnjq2mdctmta4ni00mzc4lwezodutngyyntzlogi4nzdmoje3na' },
+    { siteId:'1079509', name:'Binghatti House Site', hash:'ymfkyme1mgmtndllni00otbllwjlmtmtnmvmzguxywixm2floje3nq' },
+    { siteId:'1079515', name:'Binghatti Jasmine Site', hash:'ntg5zmuyntqtoddmnc00ogezlthiyzitnteznzexnmfkytywoje3ng' },
+    { siteId:'1079508', name:'Binghatti Lavender Site', hash:'nthmymuymwqtnmu2nc00mweylwe5mdatmguxmwyxn2nhnza1oje3nw' },
+    { siteId:'1079514', name:'Binghatti Luna Site', hash:'mdy1yzm5zwytnzg3ys00nmrklwe5yzytmjmyytezyjjlywm2oje3oa' },
+    { siteId:'1079521', name:'Binghatti Nova Site', hash:'njk3nte1mzqtowezzi00yweyltk2ywmtyweyztu1ndgymdy2oje3oq' },
+    { siteId:'1079507', name:'Binghatti Onyx Site', hash:'mjriytq1mdqtnti2zc00zge2lwe0mjqtodmzngmwyzg1ytuyoje4ma' },
+    { siteId:'1079530', name:'Binghatti ORCHID Site', hash:'n2vjmtq3mmqtztk0oc00odnjltlmyzitmzdjzjixmtuyzda0oje4mq' },
+    { siteId:'1124765', name:'Binghatti Phantom Site', hash:'nwi2mge0otytyjy4mi00zwy5lwi0otatytixmtdmzdjjn2y3oje4mg' },
+    { siteId:'1124767', name:'Binghatti Phoenix Site', hash:'yta5zjyxmmqtotc3ys00nwniltg0otatzmnknjewothiowzioje4mw' },
+    { siteId:'1124769', name:'Binghatti Reliever Site', hash:'nzmwmzmwnmqtotrmmc00mgq5ltg4mjktzjjioti2oti4ndu3oje4na' },
+    { siteId:'1079522', name:'Binghatti Rose Site', hash:'ntljzjy5n2utnzqxzs00zjy1lwflnjatytqxogy4yti0ytvmoje4nq' },
+    { siteId:'1124771', name:'Binghatti Royale Site', hash:'yzm4mdjimdutmmnkzc00nwfhltgymzitowmwzwrlmwe0ntlkoje4ng' },
+    { siteId:'1079517', name:'Binghatti Sales Boutique Site', hash:'otfhyju0ntctmdaxys00ndmwltgymtctodi1njcyotyymgyxoje4nw' },
+    { siteId:'1079516', name:'Binghatti Sales Center Site', hash:'ytc4mzezmjytmmu1ms00yzhklwixzdktnwewmdzmmwnjnzdhoje4oa' },
+    { siteId:'1079518', name:'Binghatti Sales Meydan Site', hash:'zjy2zju2ztmty2zlos00yzkzlwexmgytztg5mgy3ywy4zwmwoje4oq' },
+    { siteId:'1079506', name:'Binghatti Trillionaire Site', hash:'mze5mzqznmitytdkzi00nzhmlwfkndutmjrhnme4ymvhyte5oje5ma' },
+    { siteId:'1079538', name:'Binghatti Tulip Site', hash:'ytu2yjnlywetmjdjyi00owe4ltgzm2utmjdmnda0nju3ntc3oje5mq' },
+    { siteId:'1079531', name:'Binghatti Venus Site', hash:'nzy0mwziyjqtntlkyi00zwq2ltk3ymqtyjc4mjbjmjblzjlhoje5mg' },
+    { siteId:'1079526', name:'Binghatti Vista Site', hash:'ntjimzg4mtqtztyxys00zjk5lwe4ywytzmvlzmy1ywnimtlhoje5mw' },
+    { siteId:'1130909', name:'Facilio DLP Site', hash:'mjrknmq1ytqtotnjns00zjrilwi3mjetmtdly2qynjrkzdc2oje5na' },
+    { siteId:'1130911', name:'Facilio Non DLP Site', hash:'zdzlnwzjymytzjgxny00n2ywlwi4njetnge0ymnlodbmmzawoje5nq' }
+    
+];
+
+function generateQRCodeInto(containerId, url) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  new QRCode(container, {
+    text: url,
+    width: 300,
+    height: 300,
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
+function getDataUrlFromContainer(containerId) {
+  const container = document.getElementById(containerId);
+  const img = container.querySelector('img');
+  if (img && img.src) return img.src;
+  const canvas = container.querySelector('canvas');
+  if (canvas) return canvas.toDataURL('image/png');
+  return null;
+}
+
+function createFormattedQRImage(qrDataUrl, site) {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = 800;
+    canvas.height = 1000;
+
+    // White background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const qrImg = new Image();
+    qrImg.onload = function () {
+
+      const qrSize = 450;
+      ctx.drawImage(qrImg, (canvas.width - qrSize) / 2, 280, qrSize, qrSize);
+
+      ctx.fillStyle = "#000";
+      ctx.textAlign = "center";
+
+      ctx.font = "bold 40px Arial";
+      ctx.fillText(site.name, canvas.width / 2, 150);
+
+      ctx.font = "26px Arial";
+      ctx.fillText("Site ID: " + site.siteId, canvas.width / 2, 210);
+
+      resolve(canvas.toDataURL("image/png"));
+    };
+
+    qrImg.src = qrDataUrl;
+  });
+}
+
+async function downloadContainerImage(containerId, site) {
+  const qrDataUrl = getDataUrlFromContainer(containerId);
+  if (!qrDataUrl) return alert("QR not ready");
+
+  const finalImage = await createFormattedQRImage(qrDataUrl, site);
+
+  const a = document.createElement("a");
+  a.href = finalImage;
+  a.download = site.name.replace(/[^a-z0-9-_]/gi,'_') + ".png";
+  a.click();
+}
+
+async function downloadAllAsZip() {
+  const zip = new JSZip();
+  let added = 0;
+
+  for (let i = 0; i < SITES.length; i++) {
+    const site = SITES[i];
+    const qrDataUrl = getDataUrlFromContainer('qrcode-' + i);
+    if (!qrDataUrl) continue;
+
+    const finalImage = await createFormattedQRImage(qrDataUrl, site);
+
+    zip.file(
+      site.name.replace(/[^a-z0-9-_]/gi,'_') + ".png",
+      finalImage.split(',')[1],
+      { base64:true }
+    );
+    added++;
+  }
+
+  if (!added) return alert("No QR images found");
+
+  const blob = await zip.generateAsync({ type:'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Formatted_QR_Codes.zip';
+  a.click();
+}
+
+async function printAllQRCodes() {
+  const w = window.open('', '_blank');
+  w.document.write('<html><body style="font-family:Arial;text-align:center;">');
+
+  for (let i = 0; i < SITES.length; i++) {
+    const site = SITES[i];
+    const qrDataUrl = getDataUrlFromContainer('qrcode-' + i);
+    if (!qrDataUrl) continue;
+
+    const finalImage = await createFormattedQRImage(qrDataUrl, site);
+
+    w.document.write(`
+      <div style="page-break-after:always;">
+        <img src="${finalImage}" width="600">
+      </div>
+    `);
+  }
+
+  w.document.write('</body></html>');
+  w.document.close();
+  setTimeout(() => w.print(), 800);
+}
+
+window.onload = () => {
+  const cards = document.getElementById('cards');
+
+  SITES.forEach((site, i) => {
+    const id = 'qrcode-' + i;
+    const fullUrl = BASE_URL + site.hash + "#siteKey=" + site.siteId;
+
+    const card = document.createElement('div');
+    card.style = 'width:320px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fff;text-align:center;';
+    card.innerHTML = `
+      <div id="${id}"></div>
+      <div style="margin-top:8px;font-weight:600;color:#333;">${site.name}</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
+        <button onclick="downloadContainerImage('${id}', SITES[${i}])">Download PNG</button>
+      </div>
+    `;
+    cards.appendChild(card);
+
+    generateQRCodeInto(id, fullUrl);
+  });
+};
+</script>
+
+</body>
+</html>

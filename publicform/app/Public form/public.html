@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Service Request – Public</title>
+
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,600&display=swap" rel="stylesheet">
+
+<style>
+/* =====================
+   GLOBAL
+===================== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #eef3f9 0%, #fafafa 60%);
+  font-family: Roboto, sans-serif;
+  color: #283648;
+}
+
+.main-bg {
+  height: 220px;
+  background: linear-gradient(135deg, #0059D6, #2E7BFF);
+}
+
+/* =====================
+   FORM CONTAINER
+===================== */
+.form-container {
+  margin: -140px auto 32px;
+  width: 760px;
+  max-width: calc(100% - 24px);
+}
+
+/* =====================
+   FORM SECTIONS
+===================== */
+.form-section {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 18px;
+  border: 1px solid #EAEAEA;
+  box-shadow: 0 12px 28px rgba(0,0,0,.08);
+}
+
+.form-header {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: #0059D6;
+}
+
+/* =====================
+   FORM LAYOUT
+===================== */
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.form-col {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* =====================
+   INPUTS
+===================== */
+.input-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #5b6b82;
+}
+
+.input-field,
+.select-field,
+.textarea-field {
+  border: 1px solid #DADFE6;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  transition: all .2s ease;
+  background: #fff;
+}
+
+.input-field:focus,
+.select-field:focus,
+.textarea-field:focus {
+  outline: none;
+  border-color: #0059D6;
+  box-shadow: 0 0 0 2px rgba(0,89,214,.12);
+}
+
+.textarea-field {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* =====================
+   FILE UPLOAD
+===================== */
+.file-upload {
+  border: 2px dashed #C9D6EA;
+  border-radius: 10px;
+  padding: 18px;
+  text-align: center;
+  background: #F7FAFF;
+}
+
+.upload-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.upload-or {
+  font-size: 12px;
+  margin: 6px 0;
+  color: #8a9bb5;
+}
+
+.upload-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #0059D6;
+  background: #fff;
+  color: #0059D6;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.upload-btn:hover {
+  background: #0059D6;
+  color: #fff;
+}
+
+/* =====================
+   FOOTER BUTTON
+===================== */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+}
+.space-dropdown-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.space-dropdown-wrapper .input-field {
+  width: 100%;
+}
+.form-col {
+  min-width: 220px;
+}
+.btn {
+  padding: 10px 28px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #0059D6, #2E7BFF);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  opacity: .9;
+}
+
+.btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* =====================
+   SUCCESS CARD
+===================== */
+.success-card {
+  background: linear-gradient(135deg, #E6FFED, #F0FFF4);
+  border: 1px solid #B7EAC3;
+  border-radius: 14px;
+  padding: 28px;
+  text-align: center;
+  color: #1B5E20;
+  box-shadow: 0 10px 24px rgba(0,0,0,.08);
+}
+
+.success-icon {
+  font-size: 44px;
+  margin-bottom: 10px;
+}
+
+/* =====================
+   RESPONSIVE
+===================== */
+@media (max-width: 768px) {
+  .main-bg {
+    height: 180px;
+  }
+
+  .form-container {
+    margin-top: -120px;
+  }
+
+  .footer {
+    justify-content: center;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+.uploaded-file {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #607796;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.remove-file-btn {
+  background: none;
+  border: none;
+  color: #ff4d4f;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.remove-file-btn:hover {
+  color: #d9363e;
+}
+[v-cloak] {
+  display: none !important;
+}
+.space-dropdown-wrapper {
+  position: relative;
+}
+
+.space-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #DADFE6;
+  border-radius: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 20;
+  box-shadow: 0 8px 18px rgba(0,0,0,.08);
+  margin-top: 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.space-dropdown li {
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.space-dropdown li:hover {
+  background: #F1F6FF;
+}
+@supports (-webkit-touch-callout: none) {
+  input[type="datetime-local"] {
+    height: 44px;
+    font-size: 14px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div id="app" v-cloak>
+  <div class="main-bg"></div>
+
+  <div class="form-container">
+
+    <!-- SUCCESS -->
+    <div v-if="formSubmitted" class="success-card">
+      <div class="success-icon">✅</div>
+      <h3>Service Request Submitted</h3>
+      <p>Your request has been successfully created.<br>
+      Our team will get back to you shortly.</p>
+    </div>
+
+    <div v-if="!formSubmitted">
+
+      <!-- BASIC DETAILS -->
+      <div class="form-section">
+        <div class="form-header">Basic Details</div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="input-label">Subject *</label>
+            <input class="input-field" v-model="form.subject">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="input-label">Description</label>
+            <textarea class="textarea-field" v-model="form.description"></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="input-label">Service Request Type *</label>
+            <select class="select-field" v-model="serviceRequestType">
+              <option value="">Select</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Service">Service</option>
+            </select>
+          </div>
+
+          <div class="form-col">
+            <label class="input-label">Residence *</label>
+            <select class="select-field" v-model="form.residenceType">
+              <option value="">Select</option>
+              <option value="Tenant">Tenant</option>
+              <option value="Owner">Owner</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="input-label">Preferred Date & Time *</label>
+            <input type="datetime-local" class="input-field" v-model="form.preferredDateTime" @keydown.prevent >
+          </div>
+        </div>
+      </div>
+
+      <!-- LOCATION -->
+      <div class="form-section">
+        <div class="form-header">Location</div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="input-label">Site *</label>
+            <select class="select-field" v-model="selectedSite" @change="onSiteChange">
+              <option value="">Select Site</option>
+              <option v-for="s in sites" :key="s.id" :value="s">{{ s.name }}</option>
+            </select>
+          </div>
+
+          <div class="form-col">
+            <label class="input-label">Building *</label>
+            <select class="select-field" v-model="selectedBuilding" @change="onBuildingChange" :disabled="!buildings.length">
+              <option value="">Select Building</option>
+              <option v-for="b in buildings" :key="b.id" :value="b">{{ b.name }}</option>
+            </select>
+          </div>
+
+         <div class="form-col">
+  <label class="input-label">Space</label>
+    <div class="space-dropdown-wrapper">
+  <input
+    class="input-field"
+    v-model="spaceInput"
+    placeholder="Search & select space"
+    @input="onSpaceInput"
+    @focus="showSpaceDropdown = true"
+    @blur="hideSpaceDropdown"
+    :readonly="!!selectedSpace"
+  />
+
+  <ul
+    v-if="showSpaceDropdown && spaces.length"
+    class="space-dropdown"
+  >
+    <li
+      v-for="sp in spaces"
+      :key="sp.id"
+      @mousedown.prevent="selectSpace(sp)"
+    >
+      {{ sp.name }}
+    </li>
+  </ul>
+</div>
+</div>
+
+
+        </div>
+      </div>
+
+      <!-- ISSUE -->
+      <!-- ISSUE -->
+<div class="form-section">
+  <div class="form-header">Issue Details</div>
+
+  <div class="form-row">
+
+    <!-- CATEGORY -->
+    <div class="form-col">
+      <label class="input-label">Category</label>
+      <select class="select-field" v-model="selectedCategoryId" :disabled="!serviceRequestType">
+        <option value="">Select</option>
+        <option
+          v-for="c in categoryOptions"
+          :key="c.id"
+          :value="c.id"
+        >
+          {{ c.name }}
+        </option>
+      </select>
+    </div>
+
+    <!-- SUBCATEGORY -->
+    <div class="form-col">
+      <label class="input-label">Subcategory</label>
+      <select class="select-field" v-model="selectedSubcategoryId" :disabled="!filteredSubcategories.length">
+        <option value="">Select</option>
+        <option
+          v-for="s in filteredSubcategories"
+          :key="s.id"
+          :value="s.id"
+        >
+          {{ s.name }}
+        </option>
+      </select>
+    </div>
+
+    <!-- PROBLEM -->
+    <div class="form-col">
+      <label class="input-label">Problem</label>
+      <select
+        class="select-field"
+        v-model="selectedProblemId"
+        :disabled="!filteredProblems.length"
+      >
+        <option value="">Select</option>
+        <option
+          v-for="p in filteredProblems"
+          :key="p.id"
+          :value="p.id"
+        >
+          {{ p.name }}
+        </option>
+      </select>
+    </div>
+
+  </div>
+</div>
+
+
+      <!-- REQUESTER -->
+      <div class="form-section">
+        <div class="form-header">Requester Details</div>
+          
+          <div class="form-row">
+          <div class="form-col">
+            <label class="input-label">Name *</label>
+            <input class="input-field" v-model="form.requestorName">
+          </div>
+          <div class="form-col">
+            <label class="input-label">Email</label>
+            <input class="input-field" v-model="form.email">
+          </div>
+        </div>
+          
+
+          <div class="form-row">
+          <div class="form-col" style="max-width:120px">
+            <label class="input-label">Country Code *</label>
+            <select class="select-field" v-model="form.countryCode">
+              <option value="+971">+971 (UAE)</option>
+              <option value="+91">+91 (India)</option>
+              <option value="+966">+966 (Saudi)</option>
+              <option value="+974">+974 (Qatar)</option>
+              <option value="+965">+965 (Kuwait)</option>
+            </select>
+          </div>
+
+          <div class="form-col">
+            <label class="input-label">Contact *</label>
+            <input
+              class="input-field"
+              v-model="form.contactNumber"
+              placeholder="Enter phone number"
+              inputmode="numeric"
+            />
+          </div>
+        </div>
+
+        <!-- <div class="form-row">
+          <div class="form-col">
+            <label class="input-label">Attachment</label>
+            <div class="file-upload">
+              <div class="upload-label">Drag & Drop file here</div>
+              <div class="upload-or">or</div>
+              <input type="file" id="fileInput" style="display:none" @change="onFileChange" />
+              <button class="upload-btn" @click.prevent="triggerFileInput">Browse File</button>
+
+              <div v-if="form.attachments.length" style="margin-top:10px;font-size:12px">
+                📎 {{ form.attachments[0].name }}
+              </div>
+              <div v-else style="margin-top:8px; font-size:12px; color:#ff6b6b;">
+                No file selected
+              </div>
+            </div>
+          </div>
+        </div> -->
+        <!-- </div> -->
+        <div class="form-row">
+            <div class="form-col">
+            <label class="input-label">Attachment </label>
+            <div class="file-upload">
+            <div class="upload-label">Drag and Drop here</div>
+            <div class="upload-or">or</div>
+            <input type="file" id="fileInput" multiple style="display:none" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.mov,.mp4" @change="onFileChange" />
+            <button class="upload-btn" @click.prevent="triggerFileInput">Browse File</button>
+            <div v-if="form.attachments.length" class="uploaded-file">
+            <div v-for="(f, i) in form.attachments" :key="i">
+              ✅ {{ f.name }}
+              <button class="remove-file-btn" @click.prevent="removeSingleFile(i)">✕</button>
+            </div>
+          </div>
+
+            <div v-else style="margin-top:8px; font-size:12px; color:#ff6b6b;">
+                            No file selected
+            </div>
+            </div>
+            </div>
+            </div>
+            </div>
+
+      <div class="footer">
+        <button class="btn btn-primary" :disabled="isSubmitting" @click="onSubmit">
+          {{ isSubmitting ? 'Submitting...' : 'Submit Request' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.14/vue.min.js"></script>
+<script type="text/javascript" src="https://static.facilio.com/apps-sdk/beta/facilio_apps_sdk.min.js"></script>
+
+<script>
+
+// const CATEGORY_SERVICE_REQUEST_MAP = {
+//   "A/C duct cleaning": 1200,
+//   "A/C service": 1197,
+//   "Access control": 1190,
+//   "Aluminium": 1187,
+//   "Civil": 1186,
+//   "Cleaning": 1189,
+//   "Electrical": 1155,
+//   "Energy": 1160,
+//   "Fire Safety": 1156,
+//   "Gym": 1192,
+//   "House Keeping": 1157,
+//   "HVAC": 1158,
+//   "Joinery": 1188,
+//   "Lap pool Maintenance": 1198,
+//   "Maid service": 1199,
+//   "MEP AMC service": 1196,
+//   "Others": 1193,
+//   "Plumbing": 1159,
+//   "Swimming pool": 1191
+// };
+
+
+// const REQUEST_TYPE_CATEGORY_MATRIX = {
+//   Maintenance: [
+//     { id: 2762880, name: 'Others' },
+//     { id: 2762867, name: 'Swimming pool' },
+//     { id: 2762866, name: 'Plumbing' },
+//     { id: 2762861, name: 'Joinery' },
+//     { id: 2762860, name: 'HVAC' },
+//     { id: 2762859, name: 'House Keeping' },
+//     { id: 2762858, name: 'Gym' },
+//     { id: 2762857, name: 'Fire Safety' },
+//     { id: 2762856, name: 'Energy' },
+//     { id: 2762855, name: 'Electrical' },
+//     { id: 2762854, name: 'Cleaning' },
+//     { id: 2762853, name: 'Civil' },
+//     { id: 2762852, name: 'Aluminium' },
+//     { id: 2762851, name: 'Access control' }
+//   ],
+
+//   Service: [
+//     { id: 2762865, name: 'Others' },
+//     { id: 2762864, name: 'MEP AMC service' },
+//     { id: 2762863, name: 'Maid service' },
+//     { id: 2762862, name: 'Lap pool Maintenance' },
+//     { id: 2762849, name: 'A/C duct cleaning' },
+//     { id: 2762823, name: 'A/C service' }
+//   ]
+// };
+
+// const CATEGORY_SUBCATEGORY_MATRIX = {
+//   2762863: [{ id: 2613280, name: 'Maid service Work' }],
+//   2762864: [{ id: 2527101, name: 'MEP AMC service work' }],
+//   2762862: [{ id: 2527100, name: 'Lap pool Maintenance work' }],
+//   2762861: [{ id: 2527099, name: 'Joinery' }],
+//   2762860: [{ id: 2527098, name: 'HVAC' }],
+//   2762859: [{ id: 2527097, name: 'House Keeping' }],
+//   2762857: [{ id: 2527096, name: 'Fire Safety work' }],
+//   2762856: [{ id: 2527095, name: 'Energy work' }],
+//   2762855: [{ id: 2527094, name: 'Electrical work' }],
+//   2762854: [{ id: 2527093, name: 'Cleaning work' }],
+//   2762852: [{ id: 2527092, name: 'Aluminium work' }],
+//   2762851: [{ id: 2527091, name: 'Access control work' }],
+//   2762849: [{ id: 2527073, name: 'Hvac Work' }],
+//   2762823: [{ id: 2521156, name: 'Hvac work' }],
+//   2762858: [{ id: 2527072, name: 'Gym Work' }],
+//   2762853: [{ id: 2521155, name: 'Civil work' }],
+//   2762880: [{ id: 2527102, name: 'Others' }],
+//   2762865: [{ id: 2527102, name: 'Others' }]
+// };
+
+
+// const CATEGORY_PROBLEM_MATRIX = {
+
+//   /* =========================
+//      MEP AMC service (2762864)
+//   ========================== */
+//   2762864: [
+//     { id: 2613311, name: 'Repeated failures despite AMC coverage' },
+//     { id: 2613310, name: 'Essential services downtime (power/water)' },
+//     { id: 2613309, name: 'Delay in AMC technician response' },
+//     { id: 2613308, name: 'Fire alarm false alarms' },
+//     { id: 2613307, name: 'Water leakage not permanently fixed' },
+//     { id: 2613306, name: 'Frequent power trips' }
+//   ],
+
+//   /* =========================
+//      Maid service (2762863)
+//   ========================== */
+//   2762863: [
+//     { id: 2613305, name: 'Repeated complaints without resolution' },
+//     { id: 2613304, name: 'Damage to belongings during cleaning' },
+//     { id: 2613303, name: 'Maid staff unavailable' },
+//     { id: 2613302, name: 'Bad odor due to improper waste disposal' },
+//     { id: 2613301, name: 'Cleaning schedule missed' },
+//     { id: 2613300, name: 'Common areas not cleaned properly' }
+//   ],
+
+//   /* =========================
+//      Lap pool Maintenance (2762862)
+//   ========================== */
+//   2762862: [
+//     { id: 2613299, name: 'Poor hygiene around pool area' },
+//     { id: 2613298, name: 'Pool lights not working' },
+//     { id: 2613297, name: 'Slippery poolside flooring' },
+//     { id: 2613296, name: 'Pool frequently closed for maintenance' },
+//     { id: 2613295, name: 'Strong chemical smell from pool' },
+//     { id: 2613294, name: 'Pool water looks dirty or cloudy' }
+//   ],
+
+//   /* =========================
+//      Others (2762880 / 2762865)
+//   ========================== */
+//   2762880: [
+//     { id: 2613293, name: 'Difficulty tracking service request' },
+//     { id: 2613292, name: 'Temporary fix leading to repeat issues' },
+//     { id: 2613291, name: 'Work done at inconvenient hours' },
+//     { id: 2613290, name: 'Technician arrives without prior notice' },
+//     { id: 2613289, name: 'Poor communication on issue status' },
+//     { id: 2613288, name: 'Delay in service request resolution' }
+//   ],
+
+//   /* =========================
+//      A/C duct cleaning (2762849)
+//   ========================== */
+//   2762849: [
+//     { id: 2613287, name: 'Bad smell from air vents' },
+//     { id: 2613284, name: 'Water leaking from AC unit' }
+//   ],
+
+//   /* =========================
+//      A/C service (2762823)
+//   ========================== */
+//   2762823: [
+//     { id: 2613286, name: 'Loud noise from AC unit' },
+//     { id: 2613285, name: 'Uneven cooling across rooms' },
+//     { id: 2613283, name: 'Sudden AC breakdown' },
+//     { id: 2613282, name: 'AC not cooling properly' }
+//   ],
+
+//   /* =========================
+//      Gym (2762858)
+//   ========================== */
+//   2762858: [
+//     { id: 2424143, name: 'Others' },
+//     { id: 2424142, name: 'Cleaning' },
+//     { id: 2424141, name: 'Equipment' }
+//   ],
+
+//   /* =========================
+//      Swimming pool (2762867)
+//   ========================== */
+//   2762867: [
+//     { id: 2424140, name: 'Other' },
+//     { id: 2424139, name: 'Pool Cloudy' },
+//     { id: 2424138, name: 'Pool Tile Damages' },
+//     { id: 2424137, name: 'Pool Dirty' }
+//   ],
+
+//   /* =========================
+//      Access control (2762851)
+//   ========================== */
+//   2762851: [
+//     { id: 2424136, name: 'Other' },
+//     { id: 2424135, name: 'Common Area Access' },
+//     { id: 2424134, name: 'Main Door Passcode' },
+//     { id: 2424133, name: 'Main Door Lock' }
+//   ],
+
+//   /* =========================
+//      Cleaning (2762854)
+//   ========================== */
+//   2762854: [
+//     { id: 2424132, name: 'Other' },
+//     { id: 2424131, name: 'Reception' },
+//     { id: 2424130, name: 'Lift' },
+//     { id: 2424129, name: 'Parking' },
+//     { id: 2424128, name: 'Corridor' }
+//   ],
+
+//   /* =========================
+//      Plumbing (2762866)
+//   ========================== */
+//   2762866: [
+//     { id: 2424127, name: 'Other' },
+//     { id: 2424126, name: 'Shower Mixer Issue' },
+//     { id: 2424125, name: 'Foul Odor from Drains' },
+//     { id: 2424124, name: 'Water Heater Malfunction' },
+//     { id: 2424123, name: 'Low Water Pressure' },
+//     { id: 2424122, name: 'Water Leakage (Pipes, Faucets, Toilets)' },
+//     { id: 2424121, name: 'Drainage Blockage' },
+//     { id: 2424120, name: 'Bottle Trap Issue' },
+//     { id: 2424119, name: 'Flush Tank Issue' }
+//   ],
+
+//   /* =========================
+//      Electrical (2762855)
+//   ========================== */
+//   2762855: [
+//     { id: 2424118, name: 'Other' },
+//     { id: 2424117, name: 'Light Fixture Damage' },
+//     { id: 2424116, name: 'Flickering Lights' },
+//     { id: 2424115, name: 'Bulb Replacement' },
+//     { id: 2424114, name: 'Mirror Light' },
+//     { id: 2424113, name: 'Non-Functional Doorbell' },
+//     { id: 2424112, name: 'Short Circuit' },
+//     { id: 2424111, name: 'Electrical Sockets' },
+//     { id: 2424110, name: 'Electrical Sparks' },
+//     { id: 2424109, name: 'Power Failure in Unit' },
+//     { id: 2424108, name: 'Circuit Breaker Tripping' }
+//   ],
+
+//   /* =========================
+//      HVAC (2762860)
+//   ========================== */
+//   2762860: [
+//     { id: 2424107, name: 'Other' },
+//     { id: 2424106, name: 'Overcooling Issue' },
+//     { id: 2424105, name: 'Smell Coming from AC' },
+//     { id: 2424104, name: 'AC Not Turning On' },
+//     { id: 2424103, name: 'Noises from AC' },
+//     { id: 2424102, name: 'Thermostat Issue' },
+//     { id: 2424101, name: 'AC Water Leakage' },
+//     { id: 2424100, name: 'AC Not Cooling' }
+//   ],
+
+//   /* =========================
+//      Joinery (2762861)
+//   ========================== */
+//   2762861: [
+//     { id: 2424099, name: 'Other' },
+//     { id: 2424098, name: 'Shelves' },
+//     { id: 2424097, name: 'Loose Hinges' },
+//     { id: 2424096, name: 'Wardrobe Door Issue' },
+//     { id: 2424095, name: 'Cabinet Issue' },
+//     { id: 2424094, name: 'Door Alignment' },
+//     { id: 2424093, name: 'Door Handle Issue' }
+//   ],
+
+//   /* =========================
+//      Aluminium (2762852)
+//   ========================== */
+//   2762852: [
+//     { id: 2424092, name: 'Other' },
+//     { id: 2424091, name: 'Sliding Door Lock' },
+//     { id: 2424090, name: 'Broken glass' }
+//   ],
+
+//   /* =========================
+//      Civil (2762853)
+//   ========================== */
+//   2762853: [
+//     { id: 2424089, name: 'Other' },
+//     { id: 2424088, name: 'Wooden Floor Scratches' },
+//     { id: 2424087, name: 'Broken or Chipped Tile' },
+//     { id: 2424086, name: 'Tile Slope Issue' },
+//     { id: 2424085, name: 'Uneven Tile' },
+//     { id: 2424084, name: 'Water Damage Stains' },
+//     { id: 2424083, name: 'Gypsum Board Damage' },
+//     { id: 2424082, name: 'Ceiling Paint Peeling' },
+//     { id: 2424081, name: 'Ceiling Cracks' },
+//     { id: 2424080, name: 'Ceiling Leakage' },
+//     { id: 2424079, name: 'Water Stains on Walls' },
+//     { id: 2424078, name: 'Mold and Mildew Growth' },
+//     { id: 2424077, name: 'Wall Painting' },
+//     { id: 2424076, name: 'Wall Cracks' },
+//     { id: 2424075, name: 'Wall Seepage' }
+//   ]
+// };
+new Vue({
+  el:'#app',
+  data:{
+    serviceRequestType:'',
+    form:{
+      subject:'',
+      description:'',
+      requestorName:'',
+      contactNumber:'',
+      email:'',
+      countryCode: '+971',
+      residenceType:'',
+      preferredDateTime:'',
+      attachments: []
+    },
+    categoryRequestTypeList: [],
+    subcategoryList: [],
+    problemList: [],
+
+    sites:[],
+    buildings:[],
+    spaces:[],
+    selectedSite:null,
+    selectedBuilding:null,
+    selectedSpace:null,
+
+  selectedCategoryId: null,
+selectedSubcategoryId: null,
+selectedProblemId: null,
+    spaceInput: '',
+
+    serviceRequestAttachments: [],
+    isSubmitting:false,
+    formSubmitted:false,
+    showSpaceDropdown: false
+  },
+//    computed: {
+
+//   categoryOptions() {
+//    // return REQUEST_TYPE_CATEGORY_MATRIX[this.serviceRequestType] || [];
+//      if (!this.serviceRequestType) return [];
+
+//   return this.categoryRequestTypeList.filter(item =>
+//     item.service_request_type_custom_categoryrequesttypemapping?.name === this.serviceRequestType
+//   );
+//   },
+
+//   categoryServiceRequestId() {
+//     // if (!this.selectedCategory?.name) return null;
+//     // return CATEGORY_SERVICE_REQUEST_MAP[this.selectedCategory.name] || null;
+//     return this.selectedCategory?.category_custom_categoryrequesttypemapping?.id || null;
+//   }
+// },
+computed: {
+
+  requestTypeId() {
+    if (this.serviceRequestType === 'Maintenance') return 1;
+    if (this.serviceRequestType === 'Service') return 2;
+    return null;
+  },
+
+  categoryOptions() {
+    if (!this.requestTypeId) return [];
+
+    return this.categoryRequestTypeList.filter(item =>
+      item.service_request_type_custom_categoryrequesttypemapping?.id === this.requestTypeId
+    );
+  },
+
+  // 🔹 Get Full Category Object From ID
+  selectedCategory() {
+    return this.categoryOptions.find(
+      c => c.id === this.selectedCategoryId
+    ) || null;
+  },
+
+  filteredSubcategories() {
+    if (!this.selectedCategory) return [];
+
+    const coreCategoryId =
+      this.selectedCategory.category_custom_categoryrequesttypemapping?.id;
+
+    return this.subcategoryList.filter(s =>
+      s.ticket_category_custom_categorysubcategorymapping?.id === coreCategoryId
+    );
+  },
+
+  selectedSubcategory() {
+    return this.filteredSubcategories.find(
+      s => s.id === this.selectedSubcategoryId
+    ) || null;
+  },
+
+  filteredProblems() {
+    if (!this.selectedCategory) return [];
+
+    const coreCategoryId =
+      this.selectedCategory.category_custom_categoryrequesttypemapping?.id;
+
+    return this.problemList.filter(p =>
+      p.category_custom_problemstatement?.id === coreCategoryId &&
+      (!p.ticket_type_custom_problemstatement ||
+        p.ticket_type_custom_problemstatement.id === this.requestTypeId)
+    );
+  },
+
+  selectedProblem() {
+    return this.filteredProblems.find(
+      p => p.id === this.selectedProblemId
+    ) || null;
+  },
+
+  categoryServiceRequestId() {
+    return this.selectedCategory?.category_custom_categoryrequesttypemapping?.id || null;
+  }
+
+},
+watch: {
+  async serviceRequestType(newValue) {
+    this.selectedCategoryId = null;
+    this.selectedSubcategoryId = null;
+    this.selectedProblemId = null;
+
+    if (!newValue) return;
+
+    await Promise.all([
+      this.fetchCategoryRequestTypeMapping(),
+      this.fetchCategorySubcategoryMapping(),
+      this.fetchCategoryProblemmStatementeMapping()
+    ]);
+  },
+
+  // When category changes, clear subcategory and problem
+  selectedCategoryId() {
+    this.selectedSubcategoryId = null;
+    this.selectedProblemId = null;
+  },
+
+  // When subcategory changes, clear problem
+  selectedSubcategoryId() {
+    this.selectedProblemId = null;
+  }
+},
+  mounted(){
+    window.facilioApp = FacilioAppSDK.init()
+    window.facilioApp.on('app.loaded', () => {
+    this.getSites()
+    })
+  },
+  methods:{
+parseLambdaListResponse(response) {
+  // Unwrap SDK: response might be { data: body } or body directly
+  let body = response;
+  if (response && typeof response === 'object' && 'data' in response && response.data !== undefined) {
+    body = response.data;
+  }
+  // Body might be stringified JSON from Lambda
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch (e) {
+      return [];
+    }
+  }
+  // Lambda shape: { responseCode: 0, result: { apiResponse: "[...]" } }
+  const result = body?.result;
+  let raw = result?.apiResponse;
+  if (typeof raw === 'string') {
+    try {
+      raw = JSON.parse(raw);
+    } catch (e) {
+      return [];
+    }
+  }
+  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(body)) return body;
+  if (Array.isArray(result)) return result;
+  return [];
+},
+async fetchCategoryRequestTypeMapping() {
+  try {
+
+    const response =
+      await window.facilioApp.request.invokeFacilioAPI(
+        '/v2/connectedApps/executeAPI?widgetId=658&tabType=Apps',
+        {
+          method: 'POST',
+          data: {
+            apiRequest: {
+              connectedAppId: 92, // 🔹 your connected app id
+              url: 'https://74ysxaehxg.execute-api.us-west-2.amazonaws.com/api/modules/custom_categoryrequesttypemapping?perPage=500&page=1',
+              method: 'GET',
+              headers: {
+                'x-api-key': 'paWgQJp5dM2u77evAGa5V5xPUvdicqaC4zi3jaJS'
+              }
+            }
+          }
+        }
+      );
+    console.log("category",response);
+    this.categoryRequestTypeList =
+      this.parseLambdaListResponse(response);
+
+    console.log('Category list length:',
+      this.categoryRequestTypeList.length);
+
+  } catch (error) {
+    console.error('Category API Error:', error);
+    this.categoryRequestTypeList = [];
+  }
+},
+async fetchCategorySubcategoryMapping() {
+  try {
+    const response =
+      await window.facilioApp.request.invokeFacilioAPI(
+        '/v2/connectedApps/executeAPI?widgetId=658&tabType=Apps',
+        {
+          method: 'POST',
+          data: {
+            apiRequest: {
+              connectedAppId: 92,
+              url: 'https://74ysxaehxg.execute-api.us-west-2.amazonaws.com/api/modules/custom_categorysubcategorymapping?perPage=500&page=1',
+              method: 'GET',
+              headers: {
+                'x-api-key': 'paWgQJp5dM2u77evAGa5V5xPUvdicqaC4zi3jaJS'
+              }
+            }
+          }
+        }
+      );
+    console.log("subcategory",response);
+    this.subcategoryList = this.parseLambdaListResponse(response);
+
+  } catch (error) {
+    console.error('Subcategory API Error:', error);
+    this.subcategoryList = [];
+  }
+},
+async fetchCategoryProblemmStatementeMapping() {
+  try {
+
+    const response =
+      await window.facilioApp.request.invokeFacilioAPI(
+        '/v2/connectedApps/executeAPI?widgetId=658&tabType=Apps',
+        {
+          method: 'POST',
+          data: {
+            apiRequest: {
+              connectedAppId: 92,
+              url: 'https://74ysxaehxg.execute-api.us-west-2.amazonaws.com/api/modules/custom_problemstatement?perPage=500&page=1',
+              method: 'GET',
+              headers: {
+                'x-api-key': 'paWgQJp5dM2u77evAGa5V5xPUvdicqaC4zi3jaJS'
+              }
+            }
+          }
+        }
+      );
+    console.log("problemstatement",response);
+    this.problemList =
+      this.parseLambdaListResponse(response);
+
+  } catch (error) {
+    console.error('Problem API Error:', error);
+    this.problemList = [];
+  }
+},
+resetIssueSection() {
+  this.selectedCategoryId = null;
+  this.selectedSubcategoryId = null;
+  this.selectedProblemId = null;
+},
+    onSpaceInput() {
+  this.selectedSpace = null;
+  this.showSpaceDropdown = true;
+  this.fetchSpacesForQuery(this.spaceInput);
+},
+
+selectSpace(space) {
+  this.selectedSpace = space;
+  this.spaceInput = space.name;
+  this.showSpaceDropdown = false;
+},
+
+hideSpaceDropdown() {
+  // delay to allow click event
+  setTimeout(() => {
+    this.showSpaceDropdown = false;
+  }, 200);
+},
+    getSites(){
+      window.facilioApp.request.invokeFacilioAPI('/v3/modules/site',{method:'GET'})
+        .then(r=>this.sites=r?.data?.site||[])
+    },
+    removeFile() {
+  // Clear file input
+  const input = this.$el.querySelector('#fileInput');
+  if (input) input.value = '';
+
+  // Clear Vue data
+  this.form.attachments = [];
+  this.uploadedFileIds = [];
+
+  console.log('🗑️ File removed');
+},
+    onSiteChange(){
+      this.buildings=[]
+      this.spaces=[]
+      this.selectedBuilding=null
+      this.selectedSpace=null
+      if(!this.selectedSite?.id) return
+      window.facilioApp.request.invokeFacilioAPI(
+        `/v3/modules/building?siteId=${this.selectedSite.id}`,{method:'GET'}
+      ).then(r=>this.buildings=r?.data?.building||[])
+    },
+async onBuildingChange() {
+  this.spaces = [];
+  this.selectedSpace = null;
+  this.spaceInput = '';
+
+  if (!this.selectedSite?.id || !this.selectedBuilding?.id) return;
+
+  await this.fetchSpacesForQuery('');
+},
+async fetchSpacesForQuery(query) {
+  const siteId = this.selectedSite?.id;
+  if (!siteId) return;
+
+  try {
+    let url =
+      `v3/modules/space` +
+      `?siteId=${siteId}` +
+      `&page=0&size=50`;
+
+    if (query) {
+      url += `&search=${encodeURIComponent(query)}`;
+    }
+
+    const r = await window.facilioApp.request.invokeFacilioAPI(
+      url,
+      { method: 'GET' }
+    );
+
+    this.spaces = r?.data?.space || [];
+    console.log('Spaces loaded:', this.spaces);
+
+  } catch (err) {
+    console.error('Space fetch failed', err);
+    this.spaces = [];
+  }
+},
+onCategoryChange() {
+  this.selectedSubcategoryId = null;
+  this.selectedProblemId = null;
+},
+//     onCategoryChange(){
+//       this.selectedSubcategory=null
+//       this.selectedProblem=null
+//       //this.subcategories=CATEGORY_SUBCATEGORY_MATRIX[this.selectedCategory.id]||[]
+//       this.subcategories = this.subcategoryList.filter(
+//   s => s.ticket_category_custom_categorysubcategorymapping?.id ===
+//        this.selectedCategory.category_custom_categoryrequesttypemapping?.id
+// );
+
+//       this.problems=[]
+//     },
+//     onSubcategoryChange(){
+//       this.selectedProblem=null
+//       this.problems = this.problemList.filter(
+//   p => p.category_custom_problemstatement?.id ===
+//        this.selectedCategory.category_custom_categoryrequesttypemapping?.id
+// );
+//      // this.problems=CATEGORY_PROBLEM_MATRIX[this.selectedCategory.id]||[]
+//     },
+onSubcategoryChange() {
+  this.selectedProblemId = null;
+},
+    triggerFileInput() {
+        this.$el.querySelector('#fileInput').click();
+      },
+async onFileChange(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+
+  for (const file of files) {
+    const exists = this.form.attachments.some(f => f.name === file.name && f.size === file.size);
+    if (exists) continue;
+
+    const uploaded = await this.uploadSingleFile(file);
+    if (uploaded) {
+      this.form.attachments.push(file);
+    } else {
+      alert('File upload failed for "' + file.name + '". Please try again or use a smaller file.');
+    }
+  }
+
+  e.target.value = '';
+},
+removeSingleFile(index) {
+  this.form.attachments.splice(index, 1);
+  this.serviceRequestAttachments.splice(index, 1);
+
+  if (!this.form.attachments.length) {
+    const input = this.$el.querySelector('#fileInput');
+    if (input) input.value = '';
+  }
+},
+async uploadSingleFile(file) {
+  const res = await this.addFile(file);
+  if (!res || res.error) {
+    console.error('Upload failed:', res && res.error ? res.error.message : 'No response');
+    return false;
+  }
+  const data = res.data;
+  if (!data || data.fileId == null) {
+    console.error('Upload response missing fileId:', res);
+    return false;
+  }
+  this.serviceRequestAttachments.push({
+    fileId: data.fileId,
+    createdTime: data.createdTime
+  });
+  return true;
+},
+      async uploadFiles(file) {
+        this.uploadedFileIds = [];
+        if (!file) return;
+        let { error, data } = await this.addFile(file) || {};
+        if(error) {
+          console.error("File upload failed:", error.message);
+          return;
+        }
+        console.log("data" ,data);
+        console.log("file" ,file);
+        let { fileId } = data || {};
+        console.log('fileId', fileId);
+        this.uploadedFileIds.push(fileId);
+      },
+      async addFile(file) {
+        console.log("file1",file);
+        const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+        if (file.size > MAX_SIZE) {
+          return { error: { message: "File size exceeds 10 MB"} };
+        }
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const params = {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          encoding: 'base64',
+          data: base64Data
+        };
+        const res = await window.facilioApp.interface.trigger("publicAddFile", params)
+        console.log("result",res);
+        return res;
+      },
+async onSubmit () {
+  // 🔹 Clean phone number (remove spaces, dashes)
+const cleanedNumber = this.form.contactNumber
+  .replace(/\s+/g, '')
+  .replace(/-/g, '');
+const preferredTime = new Date(this.form.preferredDateTime).getTime();
+
+if (!this.form.preferredDateTime || isNaN(preferredTime)) {
+  alert('Please select a valid Preferred Date & Time');
+  this.isSubmitting = false;
+  return;
+}
+if (this.spaceInput && !this.selectedSpace) {
+  alert('Please select a valid Space from the dropdown');
+  this.isSubmitting = false;
+  return;
+}
+// 🔹 Combine country code + number
+const fullPhoneNumber = `${this.form.countryCode}${cleanedNumber}`;
+
+  /* ---------- FRONTEND VALIDATION ---------- */
+  if (!this.form.subject) return alert('Subject is required');
+  if (!this.selectedSite?.id) return alert('Site is required');
+  if (!this.selectedBuilding?.id) return alert('Building is required');
+  if (!this.selectedCategoryId) return alert('Category is required');
+  if (!this.selectedSubcategoryId) return alert('Subcategory is required');
+  if (!this.selectedProblemId) return alert('Problem is required');
+  if (!this.categoryServiceRequestId)
+  return alert('Category mapping not found. Please contact support.');
+  this.isSubmitting = true;
+
+  /* ---------- BUILD PAYLOAD SAFELY ---------- */
+  const payload = {
+    subject: this.form.subject,
+    description: this.form.description,
+    siteId: this.selectedSite.id,
+    requestType: this.serviceRequestType === 'Maintenance' ? 1 : 2,
+    building_serviceRequest: { id: this.selectedBuilding.id },
+    residence_serviceRequest: this.form.residenceType === 'Tenant' ? 1 : 2,
+    requesterpublic: this.form.requestorName,
+    requestor_contact_number_serviceRequest: fullPhoneNumber,
+    requestor_email_serviceRequest: this.form.email,
+    preferred_date___time_serviceRequest:
+      new Date(this.form.preferredDateTime).getTime(),
+    // category_serviceRequest_1: { id: this.selectedCategory.id },
+    category_serviceRequest: { id: this.categoryServiceRequestId },
+    category_serviceRequest_1: { id: this.selectedCategoryId },
+    sub_category_serviceRequest: { id: this.selectedSubcategoryId },
+    problem_serviceRequest: { id: this.selectedProblemId },
+
+    // sub_category_serviceRequest: { id: this.selectedSubcategory.id },
+    // problem_serviceRequest: { id: this.selectedProblem.id },
+    // picture_serviceRequestId : this.uploadedFileIds[0],
+    servicerequestsattachments: this.serviceRequestAttachments,
+    ...(this.selectedSpace?.id ? { resource: { id: this.selectedSpace.id } } : {}),
+    formId: 49897,
+    actionFormId: 49897
+  };
+console.log('Attachments:', this.serviceRequestAttachments);
+
+  /* ---------- API CALL ---------- */
+  try {
+    const response =
+      await window.facilioApp.request.invokeFacilioAPI(
+        '/v3/modules/serviceRequest',
+        {
+          method: 'POST',
+          data: {
+            data: payload,
+            moduleName: 'serviceRequest'
+          }
+        }
+      );
+
+    console.log('Service Request created:', response);
+    this.formSubmitted = true;
+
+  } catch (err) {
+    console.error('Service Request failed:', err);
+    alert('Failed to create Service Request');
+  }
+
+  this.isSubmitting = false;
+}
+  }
+})
+</script>
+</body>
+</html>

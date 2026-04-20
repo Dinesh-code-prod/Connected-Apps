@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Sales Quotation</title>
+
+
+<style>
+/* ======================
+   PAGE SETUP
+====================== */
+
+/* ======================
+   PAGE SETUP
+====================== */
+body {
+  margin: 0;
+  background: #f2f2f2;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 20px auto;
+  background: #fff;
+  padding: 18mm;
+  box-shadow: 0 0 10px rgba(0,0,0,.15);
+  box-sizing: border-box;
+  color: #000;
+}
+
+/* ======================
+   HEADER
+====================== */
+.company-info {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.company-info strong {
+  font-size: 13px;
+}
+.header {
+  position: relative;
+}
+
+.logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.logo img {
+  height: 100px;
+}
+
+/* ======================
+   TITLE
+====================== */
+.title {
+  margin: 14px 0;
+  text-align: center;
+  border: 2px solid #000;
+  padding: 8px;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+/* ======================
+   TABLES
+====================== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+th, td {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+th {
+  background: #e6e6e6;
+  font-weight: bold;
+}
+
+.gray {
+  background: #d9d9d9;
+  font-weight: bold;
+}
+
+.no-border {
+  border: none;
+}
+
+/* ======================
+   SECTIONS
+====================== */
+.section {
+  margin-top: 12px;
+}
+
+.section-title {
+  border: 1px solid #000;
+  background: #e6e6e6;
+  padding: 6px 8px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+/* ======================
+   FOOTER
+====================== */
+.footer {
+  margin-top: 30px;
+  font-size: 11px;
+}
+
+.footer table td {
+  border: none;
+  padding: 3px 0;
+}
+
+/* ======================
+   PRINT
+====================== */
+@media print {
+  body {
+    background: none;
+  }
+  .page {
+    margin: 0;
+    box-shadow: none;
+  }
+}
+/* ======================
+   PRINT BUTTON
+====================== */
+.print-controls {
+  width: 210mm;
+  margin: 20px auto 0;
+  text-align: right;
+}
+
+.print-controls button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: bold;
+  background: #000;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.print-controls button:hover {
+  background: #444;
+}
+@media print {
+  .print-controls {
+    display: none;
+  }
+}
+
+/* ======================
+   POWERED BY
+====================== */
+.powered-by {
+  margin-top: 20px;
+  padding-top: 8px;
+  border-top: 1px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.powered-by span {
+  font-weight: bold;
+}
+
+.powered-by img {
+  height: 28px;     /* facilio logo looks better bigger */
+  width: auto;
+}
+.page {
+  position: relative;          /* 🔥 REQUIRED */
+  padding-bottom: 35mm;        /* space for footer */
+}
+.footer {
+  position: absolute;
+  bottom: 14mm;
+  left: 18mm;
+  right: 18mm;
+  font-size: 11px;
+}
+table,
+tr,
+td,
+th {
+  page-break-inside: avoid;
+}
+
+.section,
+.section-title {
+  page-break-inside: avoid;
+}
+.page-break {
+  page-break-before: always;
+}
+
+
+</style>
+</head>
+
+<body>
+  <!-- PRINT BUTTON -->
+<div class="print-controls">
+  <button onclick="window.print()">🖨️ Print Quotation</button>
+</div>
+
+<div id="app">
+  <div class="page">
+ <!-- HEADER -->
+<div class="header">
+  <!-- English -->
+  <div class="company-info left">
+    <strong>MASAKEN LUXURY SERVICES L.L.C</strong><br>
+    Binghatti Industries, M floor<br>
+    Dubai Silicon Oasis, Dubai, U.A.E.<br>
+    E-mail: Service@Masaken.me<br>
+    Website: www.masaken.me
+  </div>
+
+  <!-- Logo -->
+  <div class="logo">
+    <img src="logo.jpeg" class="logo" style="align-items:center" />
+  </div>
+
+  <!-- Arabic
+   <div class="company-info right arabic" lang="ar" dir="rtl">
+    <strong>مساكن للخدمات الفاخرة</strong><br>
+    بن غاطي للصناعة، طابق الميزانين<br>
+    دبي واحة السيليكون، دبي، الإمارات العربية المتحدة<br>
+    Service@Masaken.me :إيميل<br>
+    www.masaken.me :الموقع الإلكتروني
+  </div> -->
+</div>
+
+
+    <!-- TITLE -->
+    <div class="title">Sales Quotation</div>
+
+    <!-- BASIC INFO -->
+    <table>
+      <tr class="gray">
+        <td colspan="4">Total Amount (incl. VAT): AED {{ quotation.totalcost }}</td>
+      </tr>
+      <tr>
+        <td><strong>Building Property:</strong></td>
+        <td>{{ quotation.building  || "-"}}</td>
+        <td><strong>Customer Name:</strong></td>
+        <td>{{ quotation.customer || "-" }}</td>
+      </tr>
+      <tr>
+        <td><strong>Date of Quotation:</strong></td>
+        <td>{{ quotation.dateofquote || "-"}}</td>
+        <td><strong>Customer Contact:</strong></td>
+        <td>{{ quotation.customernumber || "-"}}</td>
+      </tr>
+      <tr>
+        <td><strong>Reference No:</strong></td>
+        <td>{{ quotation.refnumber || "-" }}</td>
+        <td><strong>Location Reference:</strong></td>
+        <td>{{ quotation.resource || "-" }}</td>
+      </tr>
+      <tr>
+        <td><strong>Service Request Reference No:</strong></td>
+        <td>{{ quotation.service_request_reference_no_quote || "-" }}</td>
+        <td><strong>Workorder Reference. No:</strong></td>
+        <td>{{ quotation.workorder_reference_no_quote || "-" }}</td>
+      </tr>
+    </table>
+
+    <!-- DESCRIPTION -->
+    <div class="section">
+      <table>
+        <tr>
+          <td style="width:50%">
+            <strong>Description Issue as Reported:</strong><br><br>
+            {{ quotation.description || "-" }}
+          </td>
+          <td>
+            <table>
+              <tr><td><strong>Offer Validity</strong></td><td>{{ quotation.offervalidtity || "-" }}</td></tr>
+              <tr><td><strong>Advance Payment</strong></td><td>{{ quotation.advance || "-" }}</td></tr>
+              <tr><td><strong>Reported Date</strong></td><td>{{ quotation.reported || "-"}}</td></tr>
+              <tr><td><strong>Inspection Date</strong></td><td>{{ quotation.inspectiondate || "-"}}</td></tr>
+              <tr><td><strong>Inspected by</strong></td><td>{{ quotation.inspetcionby || "-"}}</td></tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- DURATION -->
+    <div class="section">
+      <table>
+        <tr>
+          <td>
+            <strong>
+              Required duration to complete the works starting from the date of advance payment:
+            </strong>
+            {{ quotation.duration || "-" }}
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- WORK SEQUENCE -->
+    <div class="section">
+      <div class="section-title">Work Execution Sequence</div>
+      <table>
+        <tr>
+          <th style="width:8%">S/N</th>
+          <th style="width:22%">Activity Type</th>
+          <th>Activity Description</th>
+          <th style="width:12%">Quantity</th>
+        </tr>
+        <tr v-for="(w, i) in works" :key="i">
+          <td>{{ i + 1 || "-"}}</td>
+          <td>{{ w.activity || "-"}}</td>
+          <td>{{ w.activityname || "-"}}</td>
+          <td>{{ w.quantity|| "-" }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- COMMERCIAL OFFER -->
+    <div class="section">
+      <div class="section-title">Commercial Offer</div>
+      <table>
+        <tr><td>Materials</td><td style="width:30%">AED {{ quotation.item_tool_total|| "0" }}</td></tr>
+        <tr><td>Services</td><td>AED {{ quotation.service_total || "0"}}</td></tr>
+        <tr><td>Minimum Charges</td><td>AED {{ quotation.others_total || "0" }}</td></tr>
+        <tr><td>Adjustment Cost <br>{{quotation.adjustmentsCostName || "-"}}</td><td>AED {{quotation.adjustmentsCost || "0"}} </td>  </tr>
+        <tr><td>Discount</td><td>AED {{ quotation.discount || "0" }}</td></tr>
+        <tr class="gray"><td>Total Amount (incl VAT)</td><td>AED {{ quotation.totalcost || "0"}}</td></tr>
+        <tr><td><strong>Total (Excl VAT)</strong></td><td><strong>AED {{ quotation.withoutvat  || "0"}}</strong></td></tr>
+        <tr><td>VAT</td><td>AED {{ quotation.vat || "0"}}</td></tr>
+      </table>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="section">
+      <div class="section-title">Bank Deatils</div>
+      <table>
+        <tr><td>Account Name:</td><td>MASAKEN LUXURY SERVICES LLC</td></tr>
+        <tr><td>Bank Name:</td><td>Sharjah Islamic Bank</td></tr>
+        <tr><td>Account Number:</td><td>0012159886001</td></tr>
+        <tr><td>Account Currency:</td><td>AED</td></tr>
+        <tr><td>IBAN:</td><td>AE700410000012159886001</td></tr>
+      </table>
+    </div>
+    
+    <div class="section">
+  <div class="section-title">Terms and Conditions</div>
+  <table>
+    <tr>
+      <td> Term Name </td>  <td>Term Description</td>
+    </tr>
+    <tr>
+      <td>{{ quotation.termname || "-" }} </td>  <td>{{ quotation.termdescription || "-" }}</td>
+    </tr>
+  </table>
+</div>
+
+
+  <div class="footer">
+  <div class="powered-by">
+    <span>Powered By:</span>
+    <img src="faciliologo.png" alt="Facilio" />
+  </div>
+</div>
+
+  </div>
+</div>
+  <!-- Facilio SDK -->
+  <script src="https://static.facilio.com/apps-sdk/beta/facilio_apps_sdk.min.js"></script>
+  <!-- Vue -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
+<script>
+  new Vue({
+  el: '#app',
+  data: {
+    quotation: {},
+    works: []
+  },
+ mounted() {
+  window.facilioApp = FacilioAppSDK.init();
+  window.facilioApp.on("app.loaded", async (data) => {
+    console.log(data);
+    const id = data.context.id;
+    const quotation = await this.getdetails(id);
+    this.quotation = quotation;
+    this.works = quotation.lineitemns || [];
+    console.log("Assigned quotation:", this.quotation);
+  });
+},
+  methods: {
+  async getdetails(id) {
+   const res = await window.facilioApp.request.invokeFacilioAPI(
+   "/v2/workflow/runWorkflow",
+        {
+          method: "POST",
+          data: {
+            nameSpace: "ConnectedApp",
+            functionName: "getdetails",
+            paramList: [id]
+          }
+        }
+      );
+      console.log(res?.result?.workflow?.returnValue);
+      return res?.result?.workflow?.returnValue || {};
+    }
+  }
+});
+</script>
+</body>
+</html>

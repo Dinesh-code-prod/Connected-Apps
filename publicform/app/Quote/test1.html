@@ -1,0 +1,3363 @@
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title> Maintenance Quote Form</title>
+  <link rel="stylesheet" href="/app/styles/app.css" />
+  <!-- Facilio Connected Apps SDK-->
+  <script type="text/javascript" src="https://static.facilio.com/apps-sdk/beta/facilio_apps_sdk.min.js"></script>
+  <!-- VueJS-->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+  <!-- Facilio DSM -->
+  <script src="https://cdnjs.facilio.com/design-system/2.5.87-cdn-24.0/umd/design-system.js"></script>
+  <script type="text/javascript" src="/app/scripts/app.js"></script>
+</head>
+<body>
+  <div class="responsive-form">
+  <div id="app" style="display: flex; justify-content: center">
+    <div>
+      <f-container display="flex" flex-direction="column" gradient="none" border="0px solid" color="textMain" style="width: 100%; margin: 0 auto; padding: 0 1px 0 1px;" align-items="center">
+        <!-- Maintenance Portal Image -->
+        <f-container
+          v-if="!isVendorPortal"
+          style="display:flex; align-items:center;justify-content:center; padding:0px 64px 0px 64px;width:940px; position:absolute; height:255px">
+          <img width="100%" src="./images/image.svg" />
+        </f-container>
+
+        <!-- vendor portal image removed -->
+        <!-- Page Header -->
+
+        <!-- Maintenance Portal Section -->
+
+          <f-container v-if="!isVendorPortal"
+            style="display:flex; flex-direction:column; align-items:center; height:100%; width:1220px; padding:40px 125px 0px 125px ; gap:12px; position:relative;">
+            <f-container display="flex" width="830px" height="17px" align-items="center" justify-content="flex-start"
+            border="1px solid" border-color="borderNeutralBaseSubtle" border-radius="high" gap="containerXLarge"
+            padding="containerXLarge sectionSmall containerXLarge sectionSmall" background-color="backgroundFrostHigh">
+            <f-icon group="files" color="textDefault" name="add-file" size="16" :pressable="false"></f-icon> 
+            <f-text appearance="headingMed16" color="textMain" font-weight="500">
+                {{ isEditMode ? 'Edit Quote' : 'Create Quote' }}
+            </f-text>
+          </f-container>
+            <f-container gradient="none" border="0px solid" display="flex" justify-content="center" align-items="flex-start" width="1098px" padding="containerXLarge sectionSmall containerXLarge sectionSmall">
+              <f-form :model="formModel" ref="metroForm" @submit.prevent="(isSubmitting || !isFormReadyForSubmission) ? null : handleSubmit()" style="display:flex;  align-items:center; justify-content:center; width:1145px; align-items: center;">
+            <f-container display="flex" align-items="flex-start" justify-content="flex-start" gradient="none"
+                  border="1px solid" border-color="backgroundMidgroundDark" border-radius="high"
+                  background-color="backgroundContainer" flex-direction="column" padding="sectionMedium sectionMedium sectionMedium sectionMedium"
+                  gap="containerXLarge" width="815px">
+                  <f-text appearance="headingMed14" color="textMain" font-weight="500"
+                    style="display: block; margin-bottom: 2px; "> Client Information</f-text>
+                  <f-form-item label="Subject" prop="subject" :required="true">
+                    <f-input v-model="formModel.subject" placeholder="Enter Name"></f-input>
+                  </f-form-item>
+                  <f-form-item label="Description" prop="description" :required="true">
+                    <f-input v-model="formModel.description" placeholder="Enter Description"></f-input>
+                  </f-form-item>
+                  <f-form-item label="Work Order" prop="workOrder">
+                    <f-select v-model="formModel.workOrder" :options="matchedWorkOrders.length ? matchedWorkOrders : workOrderOptions" placeholder="Select Work Order" filterable remote :remote-method="searchWorkOrders" :loading="searchingWorkOrders" :disabled="isVendorPortal || isConversionMode"></f-select>
+                  </f-form-item>
+                  <!-- Corrigo Warning Message (Maintenance Portal Only) -->
+                  <f-container  v-if="!isVendorPortal && corrigoWarningMessage" display="flex" align-items="flex-start" flex-direction="column" justify-content="flex-start" gradient="none"
+                    border="1px solid" border-color="backgroundMidgroundDark" border-radius="high" background-color="backgroundMidgroundSubtle"
+                     flex-direction="row" padding="containerXxLarge containerLarge containerXxLarge containerLarge"
+                    gap="containerSmall" width="98%" >
+
+                    <f-container display="flex" align-items="center"  flex-direction="row"justify-content="center" padding-left="containerLarge">
+                   <f-container display="flex" align-items="center" justify-content="center" padding-left="containerLarge">
+                        <f-icon group="alert" name="triangle-warning-filled"  :size="18" color="textSemanticRed" :pressable="false"/>
+                    </f-container>
+                    <f-container display="flex" align-items="center" justify-content="center" >
+                        <f-text appearance="headingMed16" color="textSemanticRed" font-weight="700">
+                           Warning:
+                          </f-text>
+                    </f-container>
+                    </f-container>
+                    <f-container display="flex" align-items="center" justify-content="center" padding-left="containerLarge">
+                      <f-container display="flex" align-items="center" justify-content="center" padding-left="containerLarge">
+                        <f-text appearance="headingMed12"  font-weight="400">
+                          {{ corrigoWarningMessage }}
+                          </f-text>
+                        </f-container>
+                    </f-container>
+                 
+                  </f-container>
+                  <f-container display="flex" gap="containerXLarge" width="100%">
+                    <f-form-item label="Site" prop="site" :required="true" style="flex: 1" v-if="!isVendorPortal">
+                      <f-input v-model="siteDisplayName" :disabled="true"></f-input>
+                    </f-form-item>
+                    <f-form-item label="Client" prop="clientName" style="flex: 1">
+                      <f-input v-model="formModel.clientName" :disabled="true"></f-input>
+                    </f-form-item>
+                </f-container>
+                  <f-container display="flex" gap="containerXLarge" width="100%">
+                    <f-form-item label="Quotation Type" prop="quotationType" style="flex: 1">
+                      <f-select v-model="formModel.quotationType" placeholder="Select an option" :options="quotationOptions" :disabled="isVendorPortal"></f-select>
+                    </f-form-item>
+                    <f-form-item label="Rate Card Type" prop="rateCardType" style="flex: 1">
+                      <f-select v-model="formModel.rateCardType" placeholder="Select an option" :options="rateCardOptions"></f-select>
+                    </f-form-item>
+                      </f-container>
+                  </f-container>
+              </f-form>
+                </f-container>
+            <!-- Quote Items Heading and Tag -->
+            <!-- Service Table Container Start -->
+            <f-container display="flex" align-items="flex-start" justify-content="flex-start" gradient="none"
+              border="1px solid" border-color="backgroundMidgroundDark" border-radius="high"
+              background-color="backgroundContainer" flex-direction="column" padding="containerXxLarge sectionLarge sectionLarge sectionLarge"
+              gap="containerXLarge" width="800px">
+              <f-container display="flex" align-items="center" gap="containerXLarge" style="margin-bottom: 2px; margin-top: 10px;" >
+                <f-text appearance="headingMed14" color="textMain" font-weight="500">Quote Items</f-text>
+                <f-tags appearance="simple" text="AED" :disabled="false" :isClickable="false" :isRemovable="false"    ></f-tags>
+              </f-container>
+              <!-- Service Table Content will go here -->
+              <div class="line-items-container">
+                <div class="custom-table">
+                  <div class="table-header">
+                    <div class="table-cell" style="width: 250px;">Service</div>
+                    <div class="table-cell" style="width: 200px;">
+                      Description
+                      <span v-if="lineItems.some(item => isDescriptionRequired(item))" style="color: #e74c3c;">*</span>
+                    </div>
+                    <div class="table-cell" style="width: 90px;">Unit Price</div>
+                    <div class="table-cell" style="width: 90px;">Qty</div>
+                    <!-- <div class="table-cell" style="width: 130px;">UOM</div> -->
+                    <!-- <div class="table-cell" style="width: 80px;">Tax (%)</div> -->
+                    <div class="table-cell" style="width: 110px;">Markup (%)</div>
+                    <div class="table-cell align-right" style="width: 120px;">Total Amount</div>
+                  </div>
+                  <div class="table-body">
+                      <div class="table-row" :class="{ 'invalid-line-item': !isLineItemServiceValid(item) }" v-for="(item, index) in lineItems" :key="item.id">
+                      <div class="table-cell" :class="{ 'invalid-service': !isLineItemServiceValid(item) }" style="width: 250px;">
+                        <f-select :hide-border="true" v-model="item.service" :options="serviceOptions" placeholder="Select" v-if="item.type === 'service'" appearance="default" @change="onServiceSelect(item, item.service)" :loading="isLoadingServices || isFilteringWorkOrderServices" filterable="true" popper-placement="bottom" :disabled="isConversionMode"></f-select>
+                      </div>
+                      <div class="table-cell" style="width: 200px;">
+                        <f-text-area
+                          :hide-border="true"
+                          v-model="item.description"
+                          placeholder="Enter Description"
+                          :rows="2"
+                          :resize="false"
+                          appearance="default"
+                          :class="{ 'required-error': isDescriptionRequired(item), 'description-textarea': true}"
+                          :disabled="isConversionMode"
+                        ></f-text-area>
+                      </div>
+                      <div class="table-cell" style="width: 90px;">
+                        <input
+                          type="number"
+                          v-model="item.unitPrice"
+                          min="0"
+                          @input="validateAndUpdateTotal(item, 'unitPrice', $event)"
+                          @keydown="preventNegativeInput($event)"
+                          style="width: 80px; text-align: center;"
+                          :disabled="isConversionMode"
+                        />
+                      </div>
+                      <div class="table-cell" style="width: 90px;">
+                        <input
+                          type="number"
+                          v-model="item.qty"
+                          min="0"
+                          step="1"
+                          @input="validateAndUpdateTotal(item, 'qty', $event)"
+                          @keydown="preventNegativeInput($event)"
+                          style="width: 60px; text-align: center;"
+                          :disabled="isConversionMode"
+                        />
+                      </div>
+                      <!-- <div class="table-cell" style="width: 130px;">
+                        <f-select :hide-border="true" v-model="item.uom" :options="uomOptions" placeholder="Select" appearance="default" @change="updateTotal(item)"></f-select>
+                      </div> -->
+                      <!-- <div class="table-cell" style="width: 80px;">
+                        <input
+                          type="number"
+                          v-model="item.tax"
+                          @input="updateTotal(item)"
+                          style="width: 60px; text-align: center;"
+                        />
+                      </div> -->
+                      <div class="table-cell" style="width: 110px;">
+                        <input
+                          type="number"
+                          v-model="item.markup"
+                          min="0"
+                          @input="validateAndUpdateTotal(item, 'markup', $event)"
+                          @keydown="preventNegativeInput($event)"
+                          style="width: 60px; text-align: center;"
+                          :disabled="isConversionMode"
+                        />
+                      </div>
+                      <div class="table-cell align-right" style="width: 120px;">
+                        <f-input :hide-border="true" v-model="item.total" :disabled="true" appearance="default"></f-input>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="delete-buttons-column">
+                  <div class="delete-button-header-spacer"></div>
+                  <div class="delete-button-wrapper" v-for="(item, index) in lineItems" :key="item.id">
+                    <f-button @click="deleteRow(index)" appearance="tertiary" v-if="isEditMode || index > 0" :disabled="isConversionMode">
+                      <f-icon group="action" color="textDefault" name="delete" size="16" :pressable="false"></f-icon>
+                    </f-button>
+                  </div>
+                </div>
+              </div>
+                <f-button @click="addNewRow" appearance="secondary" style="margin-bottom: 16px; align-self: flex-start;" :disabled="isConversionMode" v-if="!isConversionMode">+ Add New</f-button>
+              
+              <!-- Summary Section Start -->
+              <div class="quote-summary-card">
+                <f-container display="flex" flex-direction="column" gap="containerXLarge" width="100%">
+                  <f-container display="flex" justify-content="space-between" align-items="center" style="border-bottom:1px solid #ebeef0; padding-bottom:12px;">
+                    <f-text appearance="headingMed18" font-weight="700">Charges</f-text>
+                    <f-text appearance="headingMed18" font-weight="700">Amount</f-text>
+            </f-container>
+                  <f-container display="flex" justify-content="space-between" align-items="center">
+                    <f-text appearance="bodyMed16" font-weight="500">Sub Total ($)</f-text>
+                    <f-text appearance="bodyMed16">{{ grandTotal.toFixed(2) }}</f-text>
+                    </f-container>
+                    
+                  <f-container display="flex" justify-content="space-between" align-items="center" style="border-top:1px solid #ebeef0; padding-top:24px; margin-top:8px;">
+                    <f-text appearance="headingMed18" font-weight="700">Grand Total ($)</f-text>
+                    <f-text appearance="headingMed18" font-weight="700">{{ grandTotalWithCharges.toFixed(2) }}</f-text>
+                  </f-container>
+                </f-container>
+              </div>
+              <!-- Summary Section End -->
+            </f-container>
+            <!-- Service Table Container End -->
+            <f-container display="flex" align-items="center" justify-content="flex-end" gradient="none" border="1px solid" border-color="backgroundMidgroundDark" border-radius="high" background-color="backgroundContainer" flex-direction="row" padding="containerXxLarge sectionLarge" gap="containerXLarge" width="805px" style="margin-top: 24px;">
+              <f-button appearance="secondary" size="medium" @click="onCancel" :disabled="isSubmitting">
+                Cancel
+              </f-button>
+              <f-button type="button" appearance="primary" size="medium" @click="handleSubmit" :disabled="isFormSubmitting || !isFormReadyForSubmission || isCorrigoQuoteBlocked" :title="!isFormReadyForSubmission ? ((!isVendorPortal && hasInvalidLineItems) ? 'Some line items are invalid based on current filters. Please remove or update them.' : 'Please fill all required fields before submitting') : (isCorrigoQuoteBlocked ? corrigoWarningMessage : '')">
+                {{ isFormSubmitting ? (isEditMode ? 'Saving...' : 'Generating Draft...') : (isEditMode ? 'Save Changes' : 'Generate Draft') }}
+                <f-icon v-if="isFormSubmitting" group="action" color="#fff" name="loading" size="16" :pressable="false" style="margin-left: 8px;"></f-icon>
+              </f-button>
+            </f-container>
+          </f-container>
+
+          <!-- END MAINTENANCE PORTAL SECTION -->
+          
+          
+
+      </f-container>
+    </div>
+  </div>
+  
+  <script src="https://cdnjs.facilio.com/design-system/2.5.87-cdn-24.0/umd/design-system.js"></script>
+
+  <style>
+    .required-error textarea,
+    .required-error .f-text-area__inner {
+      border: 1px solid #e74c3c !important;
+    }
+    .delete-buttons-column {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      margin-left: 10px;
+    }
+    .delete-button-header-spacer {
+      height: 41px;
+    }
+    .delete-button-wrapper {
+      margin-top: 4px;
+      height: 70px;
+    }
+    .responsive-form { max-width: 1200px; width: 100%; margin: 0 auto; padding: 0 16px; box-sizing: border-box; }
+    .custom-table, .quote-summary-card { width: 100%; max-width: 100%; }
+    @media (max-width: 900px) { .responsive-form { padding: 0 8px; } }
+    @media (max-width: 600px) { .responsive-form { padding: 0 2px; } }
+    </style>
+  
+      <script>
+    
+      const instance = new Vue({
+      el: "#app",
+      data() {
+        return {
+              portalType: null, 
+              appLoaded: false, // Track if Facilio app is loaded
+              formModel: {
+                  site: null,
+                  clientName: '',
+                  subject: '',
+                  quotationType: 'client', // default for maintenance portal
+                  rateCardType: 'reactive', // default for maintenance portal
+                  vendorName: '',
+                  additionalCharges: {
+                    shipping: false,
+                    misc: false,
+                    adjustment: false,
+                    discount: false,
+                    discountValue: '',
+                    discountCurrency: 'AED',
+                    shippingValue: '',
+                    miscValue: '',
+                    adjustmentValue: ''
+                  },
+                  client: null,
+                  description: "",
+                  site: null,
+                  workOrder: null,
+              },
+              siteOptions: [],
+              siteClientMeta: {},
+              workOrderOptions: [],
+              clientOptions: [],
+              quotationOptions: [
+                  { label: 'Vendor', value: 'vendor' },
+                  { label: 'Client', value: 'client' },
+              ],
+              rateCardOptions: [
+                  { label: 'Reactive', value: 'reactive' },
+                  { label: 'Planned', value: 'planned' },
+              ],
+              lineItems: [
+                  { id: 1, type: 'service', service: null, description: '', unitPrice: '', qty: '', uom: null, tax: '', markup: '', total: '' }
+              ], // Start with one line item
+              nextId: 2,
+              selectOptions: [{label: 'Service', value: 'service'}, {label: 'Others', value: 'others'}],
+              serviceOptions: [],
+              serviceItemsMap: {},
+              uomOptions: [
+                { label: 'Each', value: 'each' },
+                { label: 'Hour', value: 'hour' }
+              ],
+              sites: [],
+              // Loading states
+              isLoadingSites: false,
+              isLoadingServices: false,
+              isLoadingWorkOrders: false,
+                isFilteringWorkOrderServices: false, // Loading state for work order service filtering
+                isReviseModeWithUsedServices: false, // Flag to track if we're in revise mode with pre-loaded services
+                // Cache for API responses
+                sitesCache: null,
+              servicesCache: {},
+              workOrdersCache: null,
+              serviceFetchTimeout: null,
+              vendorId: null, // Store vendor ID for vendor portal
+              workorderVendorId: null, // Store workorder vendor ID for maintenance portal
+              isSubmitting: false, // Add loading state for submit button
+              isAutofilling: false,
+              isConversionModeFlag: false, // Store conversion mode state
+              validationsComplete: false, // Track if all validations are complete (for edit mode)
+              matchedWorkOrders: [],
+              searchingWorkOrders: false,
+              matchedSites: [],
+              searchingSites: false,
+              // Corrigo work order quote status
+              corrigoQuoteStatus: null, // null, 'submitted', or 'approved'
+              corrigoWarningMessage: '', // Warning message to display
+              isCorrigoQuoteBlocked: false, // Flag to disable submit button
+          };
+        },
+        computed: {
+          isVendorPortal() {
+            return this.portalType === 'VENDOR_PORTAL';
+          },
+          isMaintenancePortal() {
+            return this.portalType === 'FACILIO';
+          },
+          isEditMode() {
+            // Only check for edit mode if the app is loaded
+            if (!this.appLoaded || !window.facilioApp) {
+              return false;
+            }
+            
+            // Check if this is a conversion scenario (create mode with prefilled data)
+            try {
+              const context = window.facilioApp.getContext();
+              if (context && context.query && (context.query.conversionType || context.query.id || context.query.revive)) {
+                return false;
+              }
+            } catch (error) {
+              // Continue with normal edit mode check
+            }
+            
+            // Check for quote ID from URL or from data property (for vendor portal revise)
+            const quoteIdFromUrl = this.getQuoteIdFromUrl();
+            const quoteIdFromData = this.quoteId;
+            
+            return !!(quoteIdFromUrl || quoteIdFromData);
+          },
+          isConversionMode() {
+              return this.isConversionModeFlag;
+          },
+          grandTotal() {
+              return this.lineItems.reduce((acc, item) => {
+                  return acc + (parseFloat(item.total) || 0);
+              }, 0);
+          },
+          grandTotalWithCharges() {
+              return this.grandTotal;
+          },
+          siteDisplayName() {
+            // Always show the correct site name for the current site
+            const siteObj = this.siteOptions.find(s => String(s.value) === String(this.formModel.site));
+            return siteObj ? siteObj.label : '';
+          },
+          isService421Editable() {
+            return (serviceId) => {
+              const isEditable = String(serviceId) === '421';
+              return isEditable;
+            };
+          },
+          isFormReadyForSubmission() {
+            const hasRequiredFields = this.formModel.subject && this.formModel.site && this.formModel.description;
+            const hasLineItems = this.lineItems.some(item => 
+              (item.service && item.qty && item.unitPrice) || 
+              (item.type === 'others' && item.description && item.qty && item.unitPrice)
+            );
+            const hasValidLineItems = !this.hasInvalidLineItems();
+            
+            if (!hasRequiredFields || !hasLineItems) {
+              return false;
+            }
+            
+            // In edit mode for maintenance portal, require validations to be complete first
+            if (this.isEditMode && !this.isVendorPortal && !this.validationsComplete) {
+              return false;
+            }
+            
+            // In edit mode, always require line item validation regardless of portal
+            if (this.isEditMode && !hasValidLineItems) {
+              return false;
+            }
+            
+            if (!this.isVendorPortal) {
+              const hasClient = this.formModel.client;
+              return hasClient && hasValidLineItems;
+            }
+            
+            return hasValidLineItems;
+          },
+          isFormSubmitting() {
+            // This computed property ensures the button stays disabled during submission
+            return this.isSubmitting;
+          }
+        },
+      created() {
+          // Initialize Facilio SDK and load data
+          window.facilioApp = FacilioAppSDK.init();
+          window.facilioApp.on("app.loaded", async () => {
+            // Mark app as loaded
+            this.appLoaded = true;
+            
+            // Force dropdown positioning to always appear below
+            
+            
+            
+            // Force re-evaluation of isEditMode
+            this.$forceUpdate();
+            // Set portal type
+            const appDomainType = window.facilioApp._currentUser?.appDomain?.appDomainTypeEnum;
+            this.portalType = appDomainType;
+            
+            // Autofill from context (edit or create-from-workorder)
+            const context = window.facilioApp.getContext();
+            
+            // Check for conversion mode and set flag
+            if (context && context.query && (context.query.conversionType || context.query.revive)) {
+              this.isConversionModeFlag = true;
+            } else {
+              this.isConversionModeFlag = false;
+            }
+            if (context && context.record && Object.keys(context.record).length > 0) {
+              if (this.portalType === 'FACILIO') {
+                const record = context.record;
+
+                // Subject and Description
+                this.formModel.subject = record.subject || '';
+                this.formModel.description = record.description || '';
+
+                // Work Order
+                this.formModel.workOrder = record.workorder?.id ? record.workorder.id.toString() : null;
+
+                // Site (from record.siteId or from workorder)
+                this.formModel.site = record.siteId ? record.siteId.toString() : (record.workorder?.siteId ? record.workorder.siteId.toString() : null);
+
+                // Fetch workOrder details if we have an ID
+                if (this.formModel.workOrder) {
+                  this.fetchWorkOrderDetails(this.formModel.workOrder);
+                }
+
+                // Fetch site details if we have an ID
+                if (this.formModel.site) {
+                  this.fetchSiteDetails(this.formModel.site);
+                }
+
+                // Client (from siteOptions by siteId)
+                let clientId = null;
+                let clientName = '';
+                if (this.formModel.site && this.siteOptions.length > 0) {
+                  const siteObj = this.siteOptions.find(s => s.value == this.formModel.site);
+                  if (siteObj) {
+                    clientId = siteObj.clientId;
+                    if (this.siteClientMeta[clientId]) {
+                      clientName = this.siteClientMeta[clientId].name;
+                    }
+                  }
+                }
+                this.formModel.client = clientId;
+                this.formModel.clientName = clientName;
+
+                // Quotation Type
+                this.formModel.quotationType = record.customerType === 2 || record.customerTypeEnum === 'CLIENT' ? 'client' : 'vendor';
+
+                // Rate Card Type
+                this.formModel.rateCardType = record.rate_card_type_quote === 1 ? 'planned' : 'reactive';
+
+                // Additional Charges
+                this.formModel.additionalCharges.discount = !!record.discountPercentage;
+                this.formModel.additionalCharges.discountValue = record.discountPercentage || '';
+                this.formModel.additionalCharges.shipping = !!record.shippingCharges;
+                this.formModel.additionalCharges.shippingValue = record.shippingCharges || '';
+                this.formModel.additionalCharges.adjustment = !!record.adjustmentsCost;
+                this.formModel.additionalCharges.adjustmentValue = record.adjustmentsCost || '';
+                this.formModel.additionalCharges.misc = !!record.miscellaneousCharges;
+                this.formModel.additionalCharges.miscValue = record.miscellaneousCharges || '';
+
+                // Map line items
+                if (Array.isArray(record.lineItems)) {
+                  this.lineItems = record.lineItems.map((item, idx) => ({
+                    id: idx + 1,
+                    type: item.type === 3 ? 'service' : 'others',
+                    service: item.service?.id ? item.service.id.toString() : null,
+                    description: item.description || '',
+                    unitPrice: item.unitPrice || '',
+                    qty: item.quantity || '',
+                    uom: 'each', // Default to 'each' (UOM field is hidden)
+                    tax: item.tax || '',
+                    markup: item.markup || '',
+                    total: item.cost || ''
+                  }));
+                  this.nextId = this.lineItems.length + 1;
+                }
+              }
+            } else if (context && context.query && context.query.quoteId1) {
+                await this.autofillFromRevise(context.query.quoteId1);
+              } else if (context && context.query && context.query.formDetails) {
+              // Check if formDetails contains quoteId1 (revise mode) or just work order data (create mode)
+              try {
+                const formDetails = JSON.parse(context.query.formDetails);
+                if (formDetails.quoteId1) {
+                  // Revise mode: formDetails contains quoteId1
+                  await this.autofillFromRevise(formDetails.quoteId1);
+                } else {
+                  await this.autofillFromFormDetails();
+                }
+              } catch (error) {
+                console.error('Error parsing formDetails:', error);
+               
+                await this.autofillFromFormDetails();
+              }
+            } else if (context && context.query && (context.query.conversionType || context.query.id || context.query.revive)) {
+              
+              await this.autofillFromConversion();
+            } else {
+              
+              
+              // Check if there's a different structure for maintenance portal create forms
+              if (this.portalType === 'FACILIO' && context && context.query) {
+                
+                // Only set flag if we actually have workorder or site data to autofill
+                const hasWorkorderData = context.query.workorder || context.query.siteId || context.query.client;
+                if (hasWorkorderData) {
+                  this.isSettingFromWorkOrder = true;
+                 
+                } else {
+                  
+                }
+                
+                // Check if workorder is directly in query
+                if (context.query.workorder) {
+                  
+                  this.formModel.workOrder = context.query.workorder.toString();
+                }
+                
+                // Check if siteId is directly in query
+                if (context.query.siteId) {
+                  
+                  this.formModel.site = context.query.siteId.toString();
+                }
+                
+                // Check if client is directly in query
+                if (context.query.client) {
+                  
+                  this.formModel.client = context.query.client.toString();
+                }
+                
+                // Check if subject is directly in query
+                if (context.query.subject) {
+                  
+                  this.formModel.subject = context.query.subject;
+                }
+                
+                // If we have a work order but no site, fetch work order details
+                if (this.formModel.workOrder && !this.formModel.site) {
+                  
+                  await this.fetchWorkOrderDetails(this.formModel.workOrder);
+                }
+                
+                // If we have a site but no client, fetch site details
+                if (this.formModel.site && !this.formModel.client) {
+                  
+                  await this.fetchSiteDetails(this.formModel.site);
+                }
+                
+                // Clear the flag after processing alternative context structure (only if it was set)
+                if (hasWorkorderData) {
+                  setTimeout(() => {
+                    this.isSettingFromWorkOrder = false;
+                    
+                  }, 100);
+                }
+              }
+            }
+            
+            // vendor portal removed - no vendor defaults
+            
+            this.fetchSites();
+            this.fetchWorkOrders();
+            this.fetchQuotationTypes();
+            this.fetchRateCardTypes();
+            this.lineItems.forEach(item => this.updateTotal(item));
+            
+            // Check if we're in edit mode and load quote data (but not if we're in conversion mode)
+            const quoteId = this.getQuoteIdFromUrl();
+            if (quoteId && !(context && context.query && (context.query.conversionType || context.query.id || context.query.revive))) {
+              this.loadQuoteForEdit(quoteId);
+            }
+            
+            // After initial data loading, try to fetch services if we have all required parameters
+            this.$nextTick(() => {
+              this.tryFetchServices();
+            });
+
+            // Vendor portal edit removed
+            
+            
+          });
+        },
+        watch: {
+          appLoaded(newVal) {
+              
+            if (newVal) {
+              // Force re-evaluation of isEditMode when app loads
+              this.$nextTick(() => {
+                this.$forceUpdate();
+              });
+            }
+          },
+          'formModel.site'(siteId) {
+            
+            // Skip watcher logic if we're setting data from work order
+            if (this.isSettingFromWorkOrder) {
+              return;
+            }
+            
+            const selectedSite = this.siteOptions.find(s => String(s.value) === String(siteId));
+            
+            // Only proceed if we have a valid siteId
+            if (!siteId) {
+              this.formModel.clientName = '';
+              this.formModel.client = null;
+              this.serviceOptions = [];
+              this.clearLineItemServices();
+              return;
+            }
+            
+            // Fetch if not found, or if found but missing label or clientId
+            if ((!selectedSite && siteId) || (selectedSite && (!selectedSite.label || !selectedSite.clientId))) {
+              this.fetchSiteDetails(siteId).then(() => {
+                // Re-check after fetching site details
+                const updatedSite = this.siteOptions.find(s => String(s.value) === String(siteId));
+                if (updatedSite && updatedSite.clientId) {
+                  const clientMeta = this.siteClientMeta[updatedSite.clientId];
+                  this.formModel.clientName = clientMeta ? clientMeta.name : '';
+                  this.formModel.client = updatedSite.clientId;
+                }
+              });
+            } else if (selectedSite && selectedSite.clientId) {
+              const clientMeta = this.siteClientMeta[selectedSite.clientId];
+              this.formModel.clientName = clientMeta ? clientMeta.name : '';
+              this.formModel.client = selectedSite.clientId;
+            } else {
+            }
+            // Clear service options when site changes
+            this.serviceOptions = [];
+            this.clearLineItemServices();
+          },
+          'formModel.client'(clientId) {
+            // When client is set, fetch services if quotation type and rate card type are already selected
+            if (clientId && this.formModel.quotationType && this.formModel.rateCardType) {
+              this.fetchFilteredServiceItems();
+            }
+          },
+          'formModel.quotationType'() {
+            this.serviceOptions = [];
+            this.clearLineItemServices();
+            
+            this.servicesCache = {};
+            
+            if (this.formModel.client && this.formModel.quotationType && this.formModel.rateCardType) {
+              clearTimeout(this.serviceFetchTimeout);
+              this.serviceFetchTimeout = setTimeout(() => {
+                this.fetchFilteredServiceItems();
+              }, 300);
+            }
+            
+            // Update unit price fields based on quotation type
+            this.lineItems.forEach(item => {
+              if (item.service && this.serviceItemsMap[item.service]) {
+                const serviceData = this.serviceItemsMap[item.service];
+                if (this.formModel.quotationType === 'vendor') {
+                  item.unitPrice = serviceData.sellingPrice || serviceData.unitPrice || '';
+                }
+                this.updateTotal(item);
+              }
+            });
+          },
+          'formModel.rateCardType'() {
+            if (this.formModel.client && this.formModel.quotationType && this.formModel.rateCardType) {
+              clearTimeout(this.serviceFetchTimeout);
+              this.serviceFetchTimeout = setTimeout(() => {
+                this.fetchFilteredServiceItems();
+              }, 300);
+            }
+          },
+          'formModel.additionalCharges.shipping'(val) {
+            if (!val) this.formModel.additionalCharges.shippingValue = '';
+          },
+          'formModel.additionalCharges.misc'(val) {
+            if (!val) this.formModel.additionalCharges.miscValue = '';
+          },
+          'formModel.additionalCharges.adjustment'(val) {
+            if (!val) this.formModel.additionalCharges.adjustmentValue = '';
+          },
+          'formModel.additionalCharges.discount'(val) {
+            if (!val) this.formModel.additionalCharges.discountValue = '';
+          },
+          'formModel.workOrder'(workOrderId) {
+            if (workOrderId) {
+              this.fetchWorkOrderDetails(workOrderId);
+            } else {
+              // Clear site and client when work order is deselected
+              this.formModel.site = null;
+              this.formModel.client = null;
+              this.formModel.clientName = '';
+              // Clear Corrigo warning when work order is deselected
+              this.clearCorrigoWarning();
+            }
+          },
+          isLoadingServices(newVal) {
+            if (this.isEditMode && !this.isVendorPortal) {
+              this.checkValidationsComplete();
+            }
+          },
+          isFilteringWorkOrderServices(newVal) {
+            if (this.isEditMode && !this.isVendorPortal) {
+              this.checkValidationsComplete();
+            }
+          },
+        },
+        async mounted() {
+        },
+        methods: {
+          // ==========================================
+          // SHARED / COMMON METHODS
+          // ==========================================
+          // These methods are used across multiple portals/use cases
+          
+          async changeQuoteStatus() {
+            try {
+              const quoteIdFromUrl = this.getQuoteIdFromUrl();
+              const quoteIdFromData = this.quoteId;
+              const quoteId = quoteIdFromUrl || quoteIdFromData;
+              
+              
+              if (quoteId) {
+                const statusResponse = await window.facilioApp.request.invokeFacilioFunction('ChangeQuoteStatus', 'ChangeQuoteStatus', quoteId);
+              } else {
+              }
+            } catch (error) {
+              console.error('Error changing quote status:', error);
+            }
+          },
+          
+          showNotification(message, type = 'warning') {
+            if (window.facilioApp && window.facilioApp.interface && window.facilioApp.interface.notify) {
+              const notifyPromise = window.facilioApp.interface.notify({
+                message: message,
+                type: type,
+                duration: 2000,
+                position: 'top-right'
+              });
+              
+              const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Notification timeout')), 2000)
+              );
+              
+              Promise.race([notifyPromise, timeoutPromise])
+                .then(() => {
+                })
+                .catch((error) => {
+                  this.showNotification(message);
+                });
+            } else {
+              this.showNotification(message);
+            }
+          },
+          
+          getQuoteIdFromUrl() {
+            if (!this.appLoaded || !window.facilioApp) {
+              return null;
+            }
+            
+            try {
+              const context = window.facilioApp.getContext();
+              
+              if (context && context.record && context.record.id) {
+                return context.record.id.toString();
+              }
+            } catch (error) {
+            }
+            
+            const params = new URLSearchParams(window.location.search);
+            const urlId = params.get('id');
+            return urlId;
+          },
+          
+          // ==========================================
+          // VALIDATION METHODS (Shared)
+          // ==========================================
+          
+          isLineItemServiceValid(item) {
+            if (this.isConversionMode || !item.service) {
+              return true;
+            }
+            
+            const getServiceName = () => {
+              const matchedOption = this.serviceOptions.find(option => option.value == item.service);
+              if (matchedOption && matchedOption.label) {
+                return matchedOption.label.trim().toLowerCase();
+              }
+              if (item.description && item.description.toLowerCase().includes('non taxable material')) {
+                return 'non taxable material';
+              }
+              if (item.service === '447' || item.service === '451') {
+                return 'non taxable material';
+              }
+              return '';
+            };
+            
+            const serviceName = getServiceName();
+            const isNonTaxableMaterial = serviceName === 'non taxable material' || serviceName === 'lump sum non taxable';
+            const isEditModeWithWorkOrder = this.formModel.workOrder && (this.isReviseModeWithUsedServices || this.isEditMode);
+            const isCorrigoFilterPending = isEditModeWithWorkOrder && this.isFilteringWorkOrderServices;
+            
+            if (isCorrigoFilterPending && !isNonTaxableMaterial) {
+              return false;
+            }
+            
+            if (isEditModeWithWorkOrder) {
+              if (this.serviceOptions.some(option => option.value == item.service)) {
+                return true;
+              }
+              return isNonTaxableMaterial;
+            }
+            
+            if (!this.serviceOptions.length) {
+              return true;
+            }
+            
+            if (isNonTaxableMaterial) {
+              return true;
+            }
+            
+            return this.serviceOptions.some(option => option.value == item.service);
+          },
+          hasInvalidLineItems() {
+            return this.lineItems.some(item => !this.isLineItemServiceValid(item));
+          },
+          
+          // ==========================================
+          // MAINTENANCE PORTAL - HELPER METHODS (Service Fetching for Line Items)
+          // ==========================================
+          
+          async fetchServicesForUsedLineItems(usedServiceIds) {
+            if (!usedServiceIds || usedServiceIds.length === 0) {
+              return;
+            }
+            
+            try {
+              const servicePromises = usedServiceIds.map(async (serviceId) => {
+                try {
+                  const serviceUrl = `/v3/modules/service/${serviceId}?id=${serviceId}&moduleName=service`;
+                  const response = await window.facilioApp.request.invokeFacilioAPI(serviceUrl, { method: 'GET' });
+                  
+                  if (response.data && response.data.service) {
+                    const service = response.data.service;
+                    return {
+                      label: service.name || service.primaryValue || `Service ${serviceId}`,
+                      value: serviceId,
+                      unitPrice: service.sellingPrice || service.unitPrice || '0',
+                      uom: service.uom || null,
+                      tax: service.tax || '0'
+                    };
+                  }
+                  return null;
+                } catch (error) {
+                  console.error(`Failed to fetch service ${serviceId}:`, error);
+                  return null;
+                }
+              });
+              
+              const serviceResults = await Promise.all(servicePromises);
+              const validServices = serviceResults.filter(service => service !== null);
+              
+              this.serviceOptions = validServices;
+              
+              this.serviceOptions = this.sortServicesByCategory(this.serviceOptions);
+              
+              this.isReviseModeWithUsedServices = true;
+              
+              if (this.formModel.workOrder) {
+                this.isFilteringWorkOrderServices = true;
+                
+                try {
+                  this.serviceOptions = await this.applyWorkOrderServiceFilter(this.serviceOptions);
+                } catch (error) {
+                  console.error('Error in Corrigo filtering:', error);
+                } finally {
+                  this.isFilteringWorkOrderServices = false;
+                  this.checkValidationsComplete();
+                }
+              }
+              
+            } catch (error) {
+              console.error('Error in fetchServicesForUsedLineItems:', error);
+            }
+          },
+          
+          // ==========================================
+          // MAINTENANCE PORTAL - EDIT USECASE
+          // ==========================================
+          
+          async loadQuoteForEdit(quoteId) {
+            const url = `/v3/modules/quote/${quoteId}?id=${quoteId}&moduleName=quote`;
+            try {
+              this.validationsComplete = false;
+              
+              const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+              const quote = response.data.quote;
+              
+              this.formModel.subject = quote.subject || '';
+              this.formModel.description = quote.description || '';
+              this.formModel.site = quote.siteId ? quote.siteId.toString() : null;
+              this.formModel.client = quote.client?.id ? quote.client.id.toString() : null;
+              this.formModel.clientName = quote.client?.name || '';
+              this.formModel.quotationType = quote.customerType === 2 ? 'client' : 'vendor';
+              this.formModel.rateCardType = quote.rate_card_type_quote === 1 ? 'planned' : 'reactive';
+              this.formModel.workOrder = quote.workorder?.id ? quote.workorder.id.toString() : null;
+              
+              this.formModel.additionalCharges.discount = !!quote.discountPercentage;
+              this.formModel.additionalCharges.discountValue = quote.discountPercentage || '';
+              this.formModel.additionalCharges.shipping = !!quote.shippingCharges;
+              this.formModel.additionalCharges.shippingValue = quote.shippingCharges || '';
+              this.formModel.additionalCharges.adjustment = !!quote.adjustmentsCost;
+              this.formModel.additionalCharges.adjustmentValue = quote.adjustmentsCost || '';
+              this.formModel.additionalCharges.misc = !!quote.miscellaneousCharges;
+              this.formModel.additionalCharges.miscValue = quote.miscellaneousCharges || '';
+              
+              this.lineItems = (quote.lineItems || []).map((item, idx) => ({
+                id: idx + 1,
+                type: item.type === 3 ? 'service' : 'others',
+                service: item.service?.id ? item.service.id.toString() : null,
+                description: item.description || '',
+                unitPrice: item.unitPrice || '',
+                qty: item.quantity || '',
+                uom: 'each', // Default to 'each' (UOM field is hidden)
+                tax: item.tax || '',
+                markup: item.markup || '',
+                total: item.total || ''
+              }));
+              this.nextId = this.lineItems.length + 1;
+              
+              this.lineItems.forEach(item => this.updateTotal(item));
+              
+              this.$nextTick(() => {
+                this.checkValidationsComplete();
+              });
+                        } catch (error) {
+                console.error('Error loading quote for edit:', error);
+                this.showNotification('Failed to load quote for edit.', 'error');
+              }
+          },
+          checkValidationsComplete() {
+            if (this.isEditMode && !this.isVendorPortal) {
+              if (!this.isLoadingServices && !this.isFilteringWorkOrderServices) {
+                
+                this.$nextTick(() => {
+                  this.validationsComplete = true;
+                });
+              }
+            }
+          },
+          async onSaveEdit() {
+            try {
+              const quoteIdFromUrl = this.getQuoteIdFromUrl();
+              const quoteIdFromData = this.quoteId;
+              const quoteId = quoteIdFromUrl || quoteIdFromData;
+              
+              if (!quoteId) {
+                this.showNotification('No quote ID found for editing.');
+                return;
+              }
+              
+              if (!this.formModel.site) {
+                this.showNotification("Please select a site.");
+                this.isSubmitting = false; 
+                return;
+              }
+              if (!this.formModel.subject) {
+                this.showNotification("Please enter a subject");
+                this.isSubmitting = false; 
+                return;
+              }
+              if (!this.isVendorPortal && !this.formModel.client) {
+                this.showNotification("Please select a client");
+                this.isSubmitting = false; 
+                return;
+              }
+
+              const hasLineItems = this.lineItems.some(item => 
+                (item.service && item.qty && item.unitPrice) || 
+                (item.type === 'others' && item.description && item.qty && item.unitPrice)
+              );
+              
+              if (!hasLineItems) {
+                this.showNotification("Please add at least one line item");
+                this.isSubmitting = false; 
+                return;
+              }
+
+              for (const item of this.lineItems) {
+                const serviceObj = this.serviceOptions.find(s => s.value == item.service);
+                const serviceName = serviceObj ? (serviceObj.label || '').trim().toLowerCase() : '';
+                if ((serviceName === 'non taxable material' || serviceName === 'lump sum non taxable') && (!item.description || !item.description.trim())) {
+                  this.showNotification('Description is required for Non Taxable Material and Lump Sum Non Taxable services.');
+                  this.isSubmitting = false; 
+                  return;
+                }
+              }
+
+             
+              const customerType = this.formModel.quotationType === 'client' ? 2 : 3;
+              
+              // Map rate card type
+              const rateCardType = this.formModel.rateCardType === 'planned' ? 1 : 2;
+              // Prepare line items
+              const lineItems = this.lineItems
+                .filter(item => (item.service && item.qty && item.unitPrice) || (item.type === 'others' && item.description && item.qty && item.unitPrice))
+                .map(item => ({
+                  type: this.isVendorPortal ? 3 : (item.type === 'service' ? 3 : 5), // Hardcoded to 3 for vendor portal
+                  itemType: null,
+                  toolType: null,
+                  service: item.type === 'service' && item.service ? { id: parseInt(item.service) } : null,
+                  labour: null,
+                  tax: item.tax ? parseFloat(item.tax).toString() : null,
+                  description: item.description || null,
+                  quantity: item.qty.toString(),
+                  unitPrice: parseFloat(item.unitPrice).toFixed(2),
+                  unitOfMeasure: 1, // Hardcoded to 1 (Each) - UOM field is hidden
+                  currencyCode: "AED",
+                  exchangeRate: 1,
+                  currencyCalculated: false,
+                  availableQuantity: 0
+                }));
+
+              const context = window.facilioApp.getContext();
+              const baseRecord = context.record;
+              
+              let payload;
+              
+              if (this.isVendorPortal) {
+                // Vendor portal payload - start with base record and override form fields
+                payload = {
+                  data: {
+                    ...baseRecord, // Start with all existing data
+                    // Override with form values
+                    subject: this.formModel.subject,
+                    siteId: parseInt(this.formModel.site),
+                    customerType: 3, // Hardcoded for vendor portal
+                    billDate: Date.now(), // Current time
+                    vendor: { id: parseInt(this.vendorId) },
+                    client: null, // Null for vendor portal
+                    contact: { id: window.facilioApp._currentUser.peopleId },
+                    workorder: this.formModel.workOrder ? { id: parseInt(this.formModel.workOrder) } : null,
+                    description: this.formModel.description || null,
+                    lineItems: lineItems,
+                    formId: 50771, // unified form ID
+                    actionFormId: 50771
+                  },
+                  moduleName: "quote"
+                };
+              } else {
+                // Maintenance portal payload - start with base record and override form fields
+                payload = {
+                  data: {
+                    ...baseRecord, // Start with all existing data
+                    // Override with form values
+                    subject: this.formModel.subject,
+                    siteId: parseInt(this.formModel.site),
+                    customerType: customerType,
+                    rate_card_type_quote: rateCardType,
+                    client: { id: parseInt(this.formModel.client) },
+                    vendor: this.formModel.quotationType === 'vendor' ? (this.workorderVendorId ? { id: parseInt(this.workorderVendorId) } : null) : null,
+                    workorder: this.formModel.workOrder ? { id: parseInt(this.formModel.workOrder) } : null,
+                    description: this.formModel.description || '',
+                    lineItems: lineItems,
+                    formId: 50771,
+                    actionFormId: 50771
+                  },
+                  moduleName: "quote"
+                };
+              }
+
+              const quoteData = {
+                subject: this.formModel.subject,
+                siteId: parseInt(this.formModel.site),
+                customerType: customerType,
+                rate_card_type_quote: rateCardType,
+                client: { id: parseInt(this.formModel.client) },
+                vendor: this.formModel.quotationType === 'vendor' ? (this.workorderVendorId ? { id: parseInt(this.workorderVendorId) } : null) : null,
+                workorder: this.formModel.workOrder ? { id: parseInt(this.formModel.workOrder) } : null,
+                description: this.formModel.description || '',
+                lineItems: lineItems,
+                formId: 50771,
+                actionFormId: 50771
+              };
+              
+              const response = await window.facilioApp.api.updateRecord("quote", {
+                id: quoteId,
+                data: quoteData,
+              });
+              
+              this.showNotification("Quote updated successfully!", "success");
+              
+              await this.changeQuoteStatus();
+              
+              const isReviseMode = context && context.query && context.query.quoteId1;
+              
+              if (isReviseMode) {
+                try {
+                  const statusResult = await this.changeQuoteStatus();
+                  this.showNotification("Quote status updated to 'revised'", "success");
+                } catch (statusError) {
+                  console.error("Error updating quote status:", statusError);
+                  this.showNotification("Quote updated but status update failed", "warning");
+                }
+              }
+              
+              // Trigger save and close events for redirection to summary page
+              const responseData = response && response.data ? response.data : (response || { id: quoteId });
+              
+              window.facilioApp.interface.trigger("save", responseData);
+              window.facilioApp.interface.trigger("close");
+
+            } catch (error) {
+              console.error("Error updating quote:", error);
+              this.showNotification("Failed to update quote. Please try again.");
+              this.isSubmitting = false; 
+            }
+          },
+          
+          // ==========================================
+          // MAINTENANCE PORTAL - CREATE USECASE
+          // ==========================================
+          // Note: onSubmit() handles both maintenance and vendor portal create
+          
+          async onSubmit() {
+            try {
+              if (!this.formModel.site) {
+                this.showNotification('Please select a site.');
+                this.isSubmitting = false; // Reset state on validation error
+                return;
+              }
+              if (!this.formModel.subject) {
+                this.showNotification("Please enter a subject");
+                this.isSubmitting = false; // Reset state on validation error
+                return;
+              }
+
+              // Check if at least one line item has data
+              const hasLineItems = this.lineItems.some(item => 
+                (item.service && item.qty && item.unitPrice) || 
+                (item.type === 'others' && item.description && item.qty && item.unitPrice)
+              );
+              
+              if (!hasLineItems) {
+                this.showNotification("Please add at least one line item");
+                this.isSubmitting = false; // Reset state on validation error
+                return;
+              }
+
+              // Additional validation: require description for special services
+              for (const item of this.lineItems) {
+                const serviceObj = this.serviceOptions.find(s => s.value == item.service);
+                const serviceName = serviceObj ? (serviceObj.label || '').trim().toLowerCase() : '';
+                if ((serviceName === 'non taxable material' || serviceName === 'lump sum non taxable') && (!item.description || !item.description.trim())) {
+                  this.showNotification('Description is required for Non Taxable Material and Lump Sum Non Taxable services.');
+                  this.isSubmitting = false; // Reset state on validation error
+                  return;
+                }
+              }
+
+              // Show loading state
+              const loadingMessage = this.isEditMode ? "Updating quote..." : (this.isVendorPortal ? "Creating vendor quote..." : "Creating quote...");
+              
+              // this.showNotification(loadingMessage);
+
+              // Vendor portal specific logic
+              if (this.isVendorPortal) {
+                // For vendor portal, ensure quotation type is set to vendor
+                this.formModel.quotationType = 'vendor';
+              }
+
+              // Map quotation type to customerType
+              const customerType = this.formModel.quotationType === 'client' ? 2 : 3;
+              
+              // Map rate card type
+              const rateCardType = this.formModel.rateCardType === 'planned' ? 1 : 2;
+              // Prepare line items
+              const lineItems = this.lineItems
+                .filter(item => (item.service && item.qty && item.unitPrice) || (item.type === 'others' && item.description && item.qty && item.unitPrice))
+                .map(item => ({
+                  type: this.isVendorPortal ? 3 : (item.type === 'service' ? 3 : 5), // Hardcoded to 3 for vendor portal
+                  itemType: null,
+                  toolType: null,
+                  service: item.type === 'service' && item.service ? { id: parseInt(item.service) } : null,
+                  labour: null,
+                  tax: item.tax ? parseFloat(item.tax).toString() : null,
+                  description: item.description || null,
+                  quantity: item.qty.toString(),
+                  unitPrice: parseFloat(item.unitPrice).toFixed(2),
+                  unitOfMeasure: 1, // Hardcoded to 1 (Each) - UOM field is hidden
+                  currencyCode: "AED",
+                  exchangeRate: 1,
+                  currencyCalculated: false,
+                  availableQuantity: 0
+                }));
+
+              // Prepare the payload based on portal type
+              let payload;
+              
+              if (this.isVendorPortal) {
+                // Vendor portal payload
+                payload = {
+                  data: {
+                    subject: this.formModel.subject,
+                    siteId: parseInt(this.formModel.site),
+                    customerType: 3, // Hardcoded for vendor portal
+                    billDate: Date.now(), // Current time
+                    expiryDate: null,
+                    vendor: { id: parseInt(this.vendorId) }, // Will be set from vendor contact
+                    tenant: null,
+                    client: null, // Null for vendor portal
+                    contact: { id: window.facilioApp._currentUser.peopleId }, // Set contact to current user's peopleId
+                    workorder: this.formModel.workOrder ? { id: parseInt(this.formModel.workOrder) } : null,
+                    signatureId: null,
+                    description: this.formModel.description || null,
+                    lineItems: lineItems,
+                    currencyCode: "AED",
+                    exchangeRate: 1,
+                    discountPercentage: null,
+                    shippingCharges: null,
+                    adjustmentsCost: null,
+                    miscellaneousCharges: null,
+                    discountAmount: null,
+                    tax: null,
+                    notes: null,
+                    formId: 50771, // unified form ID
+                    actionFormId: 50771,
+                    mySignatureApplied: false
+                  },
+                  moduleName: "quote"
+                };
+              } else {
+                // Maintenance portal payload (original logic)
+                // Get parent quotation ID from context only for "Convert to User Quote"
+                const context = window.facilioApp.getContext();
+                const isConversionMode = context && context.query && (context.query.conversionType || context.query.revive);
+                const parentQuotationId = isConversionMode && context.query.id ? parseInt(context.query.id) : null;
+                
+                // Build base payload
+                const basePayload = {
+                  subject: this.formModel.subject,
+                  siteId: parseInt(this.formModel.site),
+                  client_rejection_reason_quote: null,
+                  customerType: customerType,
+                  rate_card_type_quote: rateCardType,
+                  client: { id: parseInt(this.formModel.client) },
+                  system_revised_feature_quote: 0,
+                  wo_source_quote: null,
+                  revised_by_metro__quote: false,
+                  client_quote_id_quote: null,
+                  vendor_resolved__quote: 0,
+                  expiryDate: null,
+                  vendor: this.formModel.quotationType === 'vendor' ? (this.workorderVendorId ? { id: parseInt(this.workorderVendorId) } : null) : null,
+                  tenant: null,
+                  workorder: this.formModel.workOrder ? { id: parseInt(this.formModel.workOrder) } : null,
+                  manual_email_entry_quote: null,
+                  reason_for_recalling_quote_quote: null,
+                  reason_for_rejection_quote: null,
+                  billToAddress: {
+                    street: null, city: null, state: null, zip: null, lat: 1.1, lng: 1.1, country: null
+                  },
+                  description: this.formModel.description || '',
+                  lineItems: lineItems,
+                  currencyCode: "AED",
+                  exchangeRate: 1,
+                  discountPercentage: null,
+                  shippingCharges: null,
+                  adjustmentsCost: null,
+                  miscellaneousCharges: null,
+                  discountAmount: null,
+                  tax: null,
+                  formId: 50771,
+                  actionFormId: 50771,
+                  mySignatureApplied: false
+                };
+                
+                // Only add parentQuotationId if it's a conversion
+                if (parentQuotationId) {
+                  basePayload.parentQuotationId = { id: parentQuotationId };
+                }
+                
+                payload = {
+                  data: basePayload,
+                  moduleName: "quote"
+                };
+              }
+
+              // Determine URL and method based on edit mode
+              const quoteId = this.getQuoteIdFromUrl();
+              let url, options;
+              
+              if (this.isEditMode && quoteId && payload.data.id) {
+                delete payload.data.id;
+              }
+              
+              if (this.isEditMode && quoteId) {
+                // Edit mode - update existing record
+                url = `/v3/modules/quote/${quoteId}`;
+                options = {
+                  method: "PATCH",
+                  data: payload
+                };
+                
+              } else {
+                // Create mode - create new record
+                url = "/v3/modules/quote";
+                options = {
+                  method: "POST",
+                  data: payload
+                };
+              }
+
+              window.facilioApp.request
+                .invokeFacilioAPI(url, options)
+                .then((response) => {
+                  const successMessage = this.isEditMode ? "Quote updated successfully!" : "Quote created successfully!";
+                  this.showNotification(successMessage, "success");
+                  window.facilioApp.interface.trigger("save",response.data);
+                  window.facilioApp.interface.trigger("close");
+                })
+                .catch((error) => {
+                  console.error("Error with quote operation:", error);
+                  const errorMessage = this.isEditMode ? "Failed to update quote. Please try again." : "Failed to create quote. Please try again.";
+                  this.showNotification(errorMessage);
+                  this.isSubmitting = false; // Reset state on API error
+                });
+
+            } catch (error) {
+              console.error("Error with quote operation:", error);
+              const errorMessage = this.isEditMode ? "Failed to update quote. Please try again." : "Failed to create quote. Please try again.";
+              this.showNotification(errorMessage);
+              this.isSubmitting = false; // Reset state on any other error
+            }
+          },
+          
+          // ==========================================
+          // SHARED - PICKLIST FETCHING METHODS
+          // ==========================================
+          
+          fetchQuotationTypes() {
+              new Promise(resolve => setTimeout(() => resolve([
+                  { label: 'Vendor', value: 'vendor' },
+                  { label: 'Client', value: 'client' },
+              ]), 500)).then(options => {
+                  this.quotationOptions = options;
+              });
+          },
+          fetchRateCardTypes() {
+              new Promise(resolve => setTimeout(() => resolve([
+                  { label: 'Reactive', value: 'reactive' },
+                  { label: 'Planned', value: 'planned' },
+              ]), 500)).then(options => {
+                  this.rateCardOptions = options;
+              });
+          },
+          clearLineItemServices() {
+            this.lineItems.forEach(item => {
+              item.service = null;
+              item.description = '';
+              item.unitPrice = '';
+              item.qty = '';
+              item.uom = null;
+              item.tax = '';
+              item.markup = '';
+              item.total = '';
+            });
+          },
+          
+          // ==========================================
+          // SHARED - SERVICE SELECTION & UTILITY METHODS
+          // ==========================================
+          
+          async onServiceSelect(item, selectedService) {
+            if (selectedService && (this.serviceItemsMap[selectedService] || this.isVendorPortal)) {
+              let serviceData = this.serviceItemsMap[selectedService] || {};
+              if (this.isVendorPortal) {
+                try {
+                  const svcUrl = `/v3/modules/service/${selectedService}?id=${selectedService}&moduleName=service`;
+                  const svcResp = await window.facilioApp.request.invokeFacilioAPI(svcUrl, { method: 'GET' });
+                  const svc = svcResp && svcResp.data && svcResp.data.service;
+                  if (svc) {
+                    serviceData = {
+                      description: svc.description || '',
+                      sellingPrice: svc.sellingPrice || '',
+                      unitPrice: svc.unit_price || svc.rate || '',
+                      uom: svc.uom || null,
+                      tax: svc.tax || '',
+                      markup: svc.markup || ''
+                    };
+                    this.serviceItemsMap[selectedService] = serviceData;
+                    if (!this.serviceOptions.find(o => o.value == selectedService)) {
+                      this.serviceOptions.push({
+                        label: svc.name || svc.service_name || `Service ${selectedService}`,
+                        value: selectedService
+                      });
+                    }
+                  }
+                } catch (e) {
+                }
+              }
+              const serviceOption = this.serviceOptions.find(opt => opt.value == selectedService);
+              const label = (serviceOption && serviceOption.label) || '';
+              const lowerLabel = label.trim().toLowerCase();
+              if (this.isVendorPortal) {
+                try {
+                } catch (e) {
+                }
+              }
+              if (lowerLabel !== 'non taxable material' && lowerLabel !== 'lump sum non taxable') {
+                item.description = label || serviceData.description || '';
+              } else {
+                item.description = '';
+              }
+              const unitPrice = serviceData.sellingPrice || serviceData.unitPrice;
+              item.unitPrice = (unitPrice === 0 || unitPrice === '0') ? '0' : (unitPrice || '0');
+              item.uom = serviceData.uom || null;
+              item.tax = serviceData.tax || '';
+              item.markup = serviceData.markup || '';
+              if (!item.qty) item.qty = 1;
+              this.updateTotal(item);
+            } else {
+              item.description = '';
+              item.unitPrice = '';
+              item.uom = null;
+              item.tax = '';
+              item.markup = '';
+              item.total = '';
+            }
+          },
+          
+          // ==========================================
+          // SHARED - LINE ITEM MANAGEMENT METHODS
+          // ==========================================
+          
+          addNewRow() {
+              this.lineItems.push({
+                  id: this.nextId++,
+                  type: 'service',
+                  service: null, // No preselected service
+                  description: '',
+                  unitPrice: '',
+                  qty: '',
+                  uom: null,
+                  tax: '',
+                  markup: '',
+                  total: ''
+              });
+          },
+          deleteRow(index) {
+              this.lineItems.splice(index, 1);
+          },
+          updateTotal(item) {
+              // This is a placeholder for UOM-based calculation.
+              // You may need to adjust it based on how different UOMs affect the total price.
+              let subTotal;
+              const unitPrice = parseFloat(item.unitPrice) || 0;
+              const qty = parseFloat(item.qty) || 0;
+              const tax = parseFloat(item.tax) || 0;
+              const markup = parseFloat(item.markup) || 0;
+
+              if (item.uom === 'lumpsum') {
+                  // For 'Lumpsum', quantity may be ignored.
+                  subTotal = unitPrice;
+                } else {
+                  subTotal = unitPrice * qty;
+              }
+              
+              item.total = (subTotal * (1 + tax / 100) * (1 + markup / 100)).toFixed(2);
+          },
+          preventNegativeInput(event) {
+            // Prevent typing minus sign, plus sign, or 'e' (scientific notation)
+            if (event.key === '-' || event.key === '+' || event.key === 'e' || event.key === 'E') {
+              event.preventDefault();
+            }
+          },
+          validateAndUpdateTotal(item, field, event) {
+            const value = event.target.value;
+            
+            // If value is negative, set to 0
+            if (value && parseFloat(value) < 0) {
+              item[field] = '0';
+              // Force Vue to update the input field
+              this.$nextTick(() => {
+                event.target.value = '0';
+              });
+            }
+            
+            // Call the original updateTotal method
+            this.updateTotal(item);
+          },
+          
+          // ==========================================
+          // MAINTENANCE PORTAL - SERVICE FETCHING & FILTERING
+          // ==========================================
+          
+          async fetchFilteredServiceItems() {
+            if (this.isReviseModeWithUsedServices) {
+              return;
+            }
+            
+            // For vendor portal, use simpler API without client/rate card filters
+            if (this.isVendorPortal) {
+              // Create cache key for vendor portal
+              const cacheKey = 'vendor_portal_services';
+              
+              // Check cache first
+              if (this.servicesCache[cacheKey]) {
+                this.serviceOptions = this.servicesCache[cacheKey].serviceOptions;
+                this.serviceItemsMap = this.servicesCache[cacheKey].serviceItemsMap;
+                
+                return;
+              }
+
+              this.isLoadingServices = true;
+
+              const filters = {
+                internal: {
+                  operatorId: 15,
+                  value: ["false"],
+                  operatorLookupModule: null
+                },
+                rate_card_type_service: {
+                  operatorId: 54,
+                  value: ["1"],
+                  operatorLookupModule: null
+                },
+                service_type_service: {
+                  operatorId: 15,
+                  value: ["true"],
+                  operatorLookupModule: null
+                },
+                oneLevelLookup: {}
+              };
+              const filtersParam = encodeURIComponent(JSON.stringify(filters));
+              const url = `/v3/modules/service/view/all?fetchOnlyViewGroupColumn=true&moduleName=service&viewName=all&filters=${filtersParam}&page=1&perPage=50&search=&withoutCustomButtons=true`;
+              
+              try {
+                const { data } = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+                
+                if (data && data.service) {
+                  this.serviceOptions = data.service.map(service => ({
+                    label: service.name || service.service_name || 'Unknown Service',
+                    value: service.id || service.service_id
+                  }));
+                  
+                  this.serviceItemsMap = {};
+                  data.service.forEach(service => {
+                    this.serviceItemsMap[service.id || service.service_id] = {
+                      description: service.description || '',
+                      sellingPrice: service.sellingPrice || '',
+                      unitPrice: service.unit_price || service.rate || '',
+                      uom: service.uom || null,
+                      tax: service.tax || '',
+                      markup: service.markup || ''
+                    };
+                  });
+                  
+                  // FILTER OUT DUPLICATE ZERO-PRICE SERVICES
+                  this.serviceOptions = this.filterServiceOptions(this.serviceOptions, this.serviceItemsMap);
+                  
+                  this.servicesCache[cacheKey] = {
+                    serviceOptions: this.serviceOptions,
+                    serviceItemsMap: this.serviceItemsMap
+                  };
+                }
+              } catch (error) {
+                console.error('Error fetching vendor portal service items:', error);
+                this.serviceOptions = [];
+                this.serviceItemsMap = {};
+              } finally {
+                this.isLoadingServices = false;
+                // Check if validations are complete (for edit mode)
+                this.checkValidationsComplete();
+              }
+              return;
+            }
+
+            // Original logic for maintenance portal
+            // Only fetch if we have all required parameters
+            if (!this.formModel.client || !this.formModel.quotationType || !this.formModel.rateCardType) {
+              return;
+            }
+
+            // Create cache key
+            const cacheKey = `${this.formModel.client}_${this.formModel.quotationType}_${this.formModel.rateCardType}`;
+            
+            // Check cache first
+            if (this.servicesCache[cacheKey]) {
+              this.serviceOptions = this.servicesCache[cacheKey].serviceOptions;
+              this.serviceItemsMap = this.servicesCache[cacheKey].serviceItemsMap;
+              return;
+            }
+
+            this.isLoadingServices = true;
+
+            // Map rate card type and quotation type to API values
+            const rateCardTypeValue = this.formModel.rateCardType === 'reactive' ? '1' : '2';
+            const quotationTypeValue = this.formModel.quotationType === 'vendor' ? 'true' : 'false';
+            
+            let filters;
+            
+            if (this.formModel.quotationType === 'vendor') {
+              // Check if this is maintenance portal with Corrigo work order
+              if (this.isMaintenancePortal && this.formModel.workOrder) {
+                filters = {
+                  internal: {
+                    operatorId: 15,
+                    value: ["false"],
+                    operatorLookupModule: null
+                  },
+                  rate_card_type_service: {
+                    operatorId: 54,
+                    value: [rateCardTypeValue],
+                    operatorLookupModule: null
+                  },
+                  oneLevelLookup: {}
+                };
+              } else {
+                filters = {
+                  rate_card_status_service: {
+                    operatorId: 54,
+                    value: ["1"], // Active
+                    operatorLookupModule: null
+                  },
+                  rate_card_type_service: {
+                    operatorId: 54,
+                    value: [rateCardTypeValue],
+                    operatorLookupModule: null
+                  },
+                  service_type_service: {
+                    operatorId: 15,
+                    value: [quotationTypeValue],
+                    operatorLookupModule: null
+                  },
+                  oneLevelLookup: {}
+                };
+              }
+            } else {
+              // For client quotation type, use full filters with client
+              filters = {
+                client_service: {
+                  operatorId: 36,
+                  value: [String(this.formModel.client)],
+                  operatorLookupModule: {
+                    displayName: 'Clients',
+                    filters: null,
+                    name: 'client',
+                    showPopup: true,
+                    typeEnum: 'BASE_ENTITY'
+                  }
+                },
+                rate_card_status_service: {
+                  operatorId: 54,
+                  value: ["1"], // Active
+                  operatorLookupModule: null
+                },
+                rate_card_type_service: {
+                  operatorId: 54,
+                  value: [rateCardTypeValue],
+                  operatorLookupModule: null
+                },
+                service_type_service: {
+                  operatorId: 15,
+                  value: [quotationTypeValue],
+                  operatorLookupModule: null
+                },
+                oneLevelLookup: {}
+              };
+            }
+            const filtersParam = encodeURIComponent(JSON.stringify(filters));
+            const url = `/v3/modules/service/view/all?fetchOnlyViewGroupColumn=true&moduleName=service&viewName=all&filters=${filtersParam}&perPage=100&search=&withoutCustomButtons=true`;
+            
+            try {
+              // Add timeout to the API call
+              const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Services fetch timeout')), 30000)
+              );
+
+              const apiPromise = window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+              let { data } = await Promise.race([apiPromise, timeoutPromise]);
+              
+              
+              
+              // Preserve services from existing serviceOptions that are used in line items
+              // This is important for edit/revise mode where services were added by autofillFromRevise
+              const existingServicesToPreserve = [];
+              if (this.lineItems && this.lineItems.length > 0) {
+                const usedServiceIds = this.lineItems
+                  .map(item => item.service)
+                  .filter(id => id);
+                
+                usedServiceIds.forEach(serviceId => {
+                  const existingService = this.serviceOptions.find(opt => opt.value == serviceId);
+                  if (existingService) {
+                    existingServicesToPreserve.push({
+                      service: existingService,
+                      serviceId: serviceId
+                    });
+                  }
+                });
+              }
+              
+              // Update service options based on fetched data
+              if (data && data.service) {
+                this.serviceOptions = data.service.map(service => ({
+                  label: service.name || service.service_name || 'Unknown Service',
+                  value: service.id || service.service_id
+                }));
+                
+                // Create a map for quick lookup when service is selected
+                this.serviceItemsMap = {};
+                data.service.forEach(service => {
+                  this.serviceItemsMap[service.id || service.service_id] = {
+                    description: service.description || '',
+                    sellingPrice: service.sellingPrice || '', // Map sellingPrice from API
+                    unitPrice: service.unit_price || service.rate || '',
+                    uom: service.uom || null,
+                    tax: service.tax || '',
+                    markup: service.markup || ''
+                  };
+                });
+                
+                this.serviceOptions = this.filterServiceOptions(this.serviceOptions, this.serviceItemsMap);
+                
+                // Sort services by category_service_1 enum for maintenance portal
+                if (this.isMaintenancePortal) {
+                  this.serviceOptions = this.sortServicesByCategory(this.serviceOptions, data.service);
+                  
+                  // Apply work order service filter for maintenance portal - for both client and vendor (with Corrigo work order)
+                  if (this.formModel.quotationType === 'client' || 
+                      (this.formModel.quotationType === 'vendor' && this.formModel.workOrder)) {
+                    this.serviceOptions = await this.applyWorkOrderServiceFilter(this.serviceOptions);
+                  }
+                }
+                
+                // Preserve ONLY "Non Taxable Material" services that were in existing serviceOptions and are used in line items
+                // Other services will follow normal Corrigo filtering (not in dropdown, red box if invalid)
+                existingServicesToPreserve.forEach(({ service, serviceId }) => {
+                  const exists = this.serviceOptions.some(opt => opt.value == serviceId);
+                  if (!exists) {
+                    // Check if this is a "Non Taxable Material" service
+                    const serviceName = (service.label || '').trim().toLowerCase();
+                    const isNonTaxableMaterial = serviceName === 'non taxable material' || serviceName === 'lump sum non taxable';
+                    
+                    if (isNonTaxableMaterial) {
+                      // Service was filtered out but is used in line items - add it back (only for Non Taxable Material)
+                      this.serviceOptions.push(service);
+                      
+                      // If serviceItemsMap doesn't have this service, try to get it from original data
+                      if (!this.serviceItemsMap[serviceId]) {
+                        const originalService = data.service.find(s => 
+                          (s.id || s.service_id) == serviceId
+                        );
+                        if (originalService) {
+                          this.serviceItemsMap[serviceId] = {
+                            description: originalService.description || '',
+                            sellingPrice: originalService.sellingPrice || '',
+                            unitPrice: originalService.unit_price || originalService.rate || '',
+                            uom: originalService.uom || null,
+                            tax: originalService.tax || '',
+                            markup: originalService.markup || ''
+                          };
+                        }
+                      }
+                    } else {
+                    }
+                  }
+                });
+                
+                // Also check for any other services in line items that might not have been preserved
+                // ONLY preserve "Non Taxable Material" services - others will show red box
+                if (this.lineItems && this.lineItems.length > 0) {
+                  const usedServiceIds = this.lineItems
+                    .map(item => item.service)
+                    .filter(id => id);
+                  
+                  usedServiceIds.forEach(serviceId => {
+                    const exists = this.serviceOptions.some(opt => opt.value == serviceId);
+                    if (!exists) {
+                      // Service is in line items but not in serviceOptions - try to find it in original data
+                      const originalService = data.service.find(s => 
+                        (s.id || s.service_id) == serviceId
+                      );
+                      if (originalService) {
+                        // Only preserve if it's "Non Taxable Material" or "Lump Sum Non Taxable"
+                        const serviceName = (originalService.name || originalService.service_name || '').trim().toLowerCase();
+                        const isNonTaxableMaterial = serviceName === 'non taxable material' || serviceName === 'lump sum non taxable';
+                        
+                        if (isNonTaxableMaterial) {
+                          this.serviceOptions.push({
+                            label: originalService.name || originalService.service_name || `Service ${serviceId}`,
+                            value: serviceId.toString()
+                          });
+                          // Ensure serviceItemsMap has the data
+                          if (!this.serviceItemsMap[serviceId]) {
+                            this.serviceItemsMap[serviceId] = {
+                              description: originalService.description || '',
+                              sellingPrice: originalService.sellingPrice || '',
+                              unitPrice: originalService.unit_price || originalService.rate || '',
+                              uom: originalService.uom || null,
+                              tax: originalService.tax || '',
+                              markup: originalService.markup || ''
+                            };
+                          }
+                        } else {
+                        }
+                      }
+                    }
+                  });
+                }
+                
+                // Cache the results
+                this.servicesCache[cacheKey] = {
+                  serviceOptions: this.serviceOptions,
+                  serviceItemsMap: this.serviceItemsMap
+                };
+                
+              } else {
+                this.serviceOptions = [];
+                this.serviceItemsMap = {};
+                // Cache empty results too
+                this.servicesCache[cacheKey] = {
+                  serviceOptions: [],
+                  serviceItemsMap: {}
+                };
+              }
+            } catch (error) {
+              console.error('Error fetching filtered service items:', error);
+              this.serviceOptions = [];
+              this.serviceItemsMap = {};
+              // Show user-friendly error message
+              if (error.message.includes('timeout')) {
+                console.error('Services fetch timed out. Please try again.');
+              }
+            } finally {
+              this.isLoadingServices = false;
+              // Check if validations are complete (for edit mode)
+              this.checkValidationsComplete();
+            }
+          },
+          
+          // ==========================================
+          // SHARED - DATA FETCHING METHODS
+          // ==========================================
+          
+          async fetchSites() {
+            // Check cache first
+            if (this.sitesCache) {
+             
+              this.siteOptions = this.sitesCache.siteOptions;
+              this.siteClientMeta = this.sitesCache.siteClientMeta;
+              return;
+            }
+
+            this.isLoadingSites = true;
+
+            try {
+              // Add timeout to the API call
+              const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Sites fetch timeout')), 30000)
+              );
+
+              const apiPromise = window.facilioApp.request.invokeFacilioAPI(
+                '/v3/modules/site/view/all?fetchOnlyViewGroupColumn=true&moduleName=site&viewName=all&perPage=100&search=&withoutCustomButtons=true',
+                {
+                  method: 'GET'
+                }
+              );
+
+              let response = await Promise.race([apiPromise, timeoutPromise]);
+              this.sites = response.data.site || [];
+              
+              // Process sites to create options and client metadata
+              // Don't overwrite existing siteOptions, merge with them
+              const newSiteOptions = this.sites.map(site => ({
+                label: site.name || site.site_name,
+                value: site.id || site.site_id,
+                clientId: site.client_id || site.client?.id
+              }));
+              
+              // Merge with existing siteOptions to preserve autofilled sites
+              const existingSiteIds = this.siteOptions.map(s => s.value);
+              const sitesToAdd = newSiteOptions.filter(site => !existingSiteIds.includes(site.value));
+              
+              if (sitesToAdd.length > 0) {
+                this.siteOptions.push(...sitesToAdd);
+              }
+              
+              // Check if our autofilled site is still there
+              const autofilledSite = this.siteOptions.find(s => s.value === '1853280');
+              
+              // Debug: Log first few sites to see their structure
+              if (this.sites.length > 0) {
+              }
+              
+              // Create client metadata map
+              this.siteClientMeta = {};
+              this.sites.forEach(site => {
+                if (site.client_id || site.client?.id) {
+                  this.siteClientMeta[site.client_id || site.client.id] = {
+                    id: site.client_id || site.client.id,
+                    name: site.client?.name || 'Unknown Client'
+                  };
+                }
+              });
+              
+              // Log detailed site metadata
+              this.siteOptions.forEach((siteOption, index) => {
+                if (siteOption.clientId) {
+                  const clientMeta = this.siteClientMeta[siteOption.clientId];
+                  }
+              });
+              
+              // Cache the results
+              this.sitesCache = {
+                siteOptions: this.siteOptions,
+                siteClientMeta: this.siteClientMeta
+              };
+              
+            } catch (error) {
+              console.error('Error fetching sites:', error);
+              this.siteOptions = [];
+              this.siteClientMeta = {};
+              // Show user-friendly error message
+              if (error.message.includes('timeout')) {
+                console.error('Sites fetch timed out. Please try again.');
+              }
+            } finally {
+              this.isLoadingSites = false;
+            }
+            this.$nextTick(() => { 
+              // Only call autofillFromRecord in edit mode (not conversion mode)
+              const context = window.facilioApp.getContext();
+              if (context && context.record && Object.keys(context.record).length > 0 && 
+                  !(context.query && (context.query.conversionType || context.query.id || context.query.revive))) {
+                this.autofillFromRecord();
+              } else {
+              }
+            });
+          },
+          async fetchWorkOrders() {
+            // Check cache first
+            if (this.workOrdersCache) {
+              
+              this.workOrderOptions = this.workOrdersCache.workOrderOptions;
+              return;
+            }
+
+            this.isLoadingWorkOrders = true;
+
+            try {
+              // Add timeout to the API call
+              const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Work orders fetch timeout')), 30000)
+              );
+
+              const apiPromise = window.facilioApp.request.invokeFacilioAPI(
+                '/v3/modules/workorder/view/all?fetchOnlyViewGroupColumn=true&moduleName=workorder&viewName=all&perPage=100&search=&withoutCustomButtons=true',
+                {
+                  method: 'GET'
+                }
+              );
+
+              let response = await Promise.race([apiPromise, timeoutPromise]);
+              const workOrders = response.data.workorder || [];
+              
+              // Debug: Log the first work order to see available fields
+              if (workOrders.length > 0) {
+              }
+              
+              // Process work orders to create options
+              this.workOrderOptions = workOrders.map(workOrder => ({
+                label: workOrder.subject || `Work Order ${workOrder.id}`,
+                value: workOrder.id || workOrder.workorder_id,
+                siteId: workOrder.siteId || workOrder.site_id
+              }));
+              
+              // Cache the results
+              this.workOrdersCache = {
+                workOrderOptions: this.workOrderOptions
+              };
+              
+            } catch (error) {
+              console.error('Error fetching work orders:', error);
+              this.workOrderOptions = [];
+              // Show user-friendly error message
+              if (error.message.includes('timeout')) {
+                console.error('Work orders fetch timed out. Please try again.');
+              }
+            } finally {
+              this.isLoadingWorkOrders = false;
+            }
+            this.$nextTick(() => { 
+              // Only call autofillFromRecord in edit mode
+              const context = window.facilioApp.getContext();
+              if (context && context.record && Object.keys(context.record).length > 0) {
+                this.autofillFromRecord();
+              } else {
+              }
+            });
+          },
+          onSiteSelect(siteId) {
+            // Handle site selection from search results
+            
+            // Find the selected site in matchedSites or siteOptions
+            const selectedSite = this.matchedSites.find(s => s.value === siteId) || 
+                                this.siteOptions.find(s => s.value === siteId);
+            
+            if (selectedSite) {
+              // Update the form model
+              this.formModel.site = siteId;
+              
+              // Clear search results to show the selected site
+              this.matchedSites = [];
+              
+              // The site watcher will handle updating client information
+              
+            }
+          },
+          tryFetchServices() {
+            // For vendor portal, fetch services immediately
+            if (this.isVendorPortal) {
+              this.fetchFilteredServiceItems();
+              return;
+            }
+            
+            // Try to fetch services if we have all required parameters for maintenance portal
+            if (this.formModel.client && this.formModel.quotationType && this.formModel.rateCardType) {
+              this.fetchFilteredServiceItems();
+            }
+          },
+          
+          
+          
+          // ==========================================
+          // VENDOR PORTAL - CREATE VIA WORKORDER USECASE
+          // ==========================================
+          // Note: autofillFromFormDetails() handles vendor portal create via workorder
+          // This method is in the "MAINTENANCE PORTAL - CREATE VIA WORKORDER USECASE" section
+          // but also handles vendor portal create via workorder
+          
+          // ==========================================
+          // SHARED - DATA FETCHING METHODS
+          // ==========================================
+          // These methods fetch data used across multiple portals/use cases
+          
+          
+          async fetchWorkOrderDetails(workOrderId) {
+            // Set flag to prevent watcher interference
+            this.isSettingFromWorkOrder = true;
+            
+            try {
+              const url = `/v3/modules/workorder/${workOrderId}?id=${workOrderId}&moduleName=workorder`;
+              const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+              if (response.data && response.data.workorder) {
+                const workOrder = response.data.workorder;
+                console.log('workOrder', workOrder);
+                
+                // Check Corrigo quote status for maintenance portal create form only
+                if (!this.isVendorPortal && !this.isEditMode) {
+                  await this.checkCorrigoQuoteStatus(workOrder);
+                }
+                
+                // Store workorder vendor ID for maintenance portal
+                if (workOrder.vendor && workOrder.vendor.id) {
+                  this.workorderVendorId = workOrder.vendor.id;
+                } else {
+                  this.workorderVendorId = null;
+                }
+                
+                // Set the site ID on the form
+                if (workOrder.siteId || workOrder.site_id) {
+                  const siteId = (workOrder.siteId || workOrder.site_id).toString();
+                  
+                  // IMPORTANT: Fetch site details BEFORE setting formModel.site to prevent watcher from clearing it
+                  await this.fetchSiteDetails(siteId);
+                  
+                  // Now set the site ID on the form
+                  this.formModel.site = siteId;
+                  
+                  // Check if we have site metadata for this site and set client
+                  const siteOption = this.siteOptions.find(s => String(s.value) === String(siteId));
+                  if (siteOption) {
+                    if (siteOption.clientId) {
+                      const clientMeta = this.siteClientMeta[siteOption.clientId];
+                      
+                      // Set the client field
+                      this.formModel.client = siteOption.clientId;
+                      this.formModel.clientName = clientMeta ? clientMeta.name : '';
+                    }
+                  }
+                }
+                
+                // Add the workOrder to the options if it doesn't exist
+                const existingOption = this.workOrderOptions.find(wo => wo.value === workOrderId);
+                if (!existingOption) {
+                  const newWorkOrderOption = {
+                    label: workOrder.subject || `Work Order ${workOrderId}`,
+                    value: workOrderId,
+                    siteId: workOrder.siteId || workOrder.site_id
+                  };
+                  this.workOrderOptions.push(newWorkOrderOption);
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching workOrder details:', error);
+            } finally {
+              // Clear the flag after a short delay to allow watchers to process
+              setTimeout(() => {
+                this.isSettingFromWorkOrder = false;
+              }, 100);
+            }
+          },
+          async fetchSiteDetails(siteId) {
+            try {
+              const url = `/v3/modules/site/${siteId}?id=${siteId}&moduleName=site`;
+              const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+              if (response.data && response.data.site) {
+                const site = response.data.site;
+
+                // Add or update the site in the options
+                const existingOption = this.siteOptions.find(s => String(s.value) === String(siteId));
+                if (!existingOption) {
+                  const newSiteOption = {
+                    label: site.name || site.site_name,
+                    value: site.id.toString(),
+                    clientId: site.client?.id
+                  };
+                  this.siteOptions.push(newSiteOption);
+                } else {
+                  // Always update label and clientId in case they were missing or stale
+                  const oldClientId = existingOption.clientId;
+                  existingOption.label = site.name || site.site_name;
+                  existingOption.clientId = site.client?.id;
+                }
+                
+                // Update client metadata if client info is available
+                if (site.client?.id) {
+                  this.siteClientMeta[site.client.id] = {
+                    id: site.client.id,
+                    name: site.client.name || 'Unknown Client'
+                  };
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching site details:', error);
+            }
+          },
+          onCancel() {
+            try {
+              window.facilioApp.interface.trigger('cancel');
+            } catch (e) {
+              console.error('Failed to cancel:', e);
+            }
+          },
+          
+          // ==========================================
+          // MAINTENANCE PORTAL - CORRIGO QUOTE STATUS CHECK
+          // ==========================================
+          
+          async checkCorrigoQuoteStatus(workOrder) {
+            // Only check for maintenance portal create form
+            if (this.isVendorPortal || this.isEditMode) {
+              return;
+            }
+            
+            try {
+              // Call Facilio function: integActions.fetchCorrigoWO
+              // Parameter: workorder response as map
+              const response = await window.facilioApp.request.invokeFacilioFunction(
+                'integActions',
+                'fetchQuoteStatus',
+                workOrder
+              );
+              console.log('response', response);
+              // Response will be in returnValue
+              const returnValue = response?.result?.workflow?.returnValue;
+              
+              // Clear previous warning
+              this.clearCorrigoWarning();
+              
+              // Check the return value
+              if (returnValue === null || returnValue === undefined || returnValue === '') {
+                // No quote created in Corrigo yet - proceed normally
+                this.corrigoQuoteStatus = null;
+                this.isCorrigoQuoteBlocked = false;
+                this.corrigoWarningMessage = '';
+              } else if (returnValue && (returnValue.toString().toLowerCase() === 'submitted' || returnValue === 'submitted')) {
+                // Quote is in submitted status
+                this.corrigoQuoteStatus = 'submitted';
+                this.isCorrigoQuoteBlocked = true;
+                this.corrigoWarningMessage = 'This Work Order already has a Quote in CorrigoPro . Please recall the existing one to continue.';
+              } else if (returnValue && (returnValue.toString().toLowerCase() === 'approved' || returnValue === 'approved')) {
+                // Quote is in approved status
+                this.corrigoQuoteStatus = 'approved';
+                this.isCorrigoQuoteBlocked = true;
+                this.corrigoWarningMessage = 'This Work Order already has an Approved Quote in CorrigoPro . No new Quote can be created.';
+              } else {
+                // Unknown status - log for debugging but allow creation
+                console.log('Unknown Corrigo quote status:', returnValue);
+                this.corrigoQuoteStatus = null;
+                this.isCorrigoQuoteBlocked = false;
+                this.corrigoWarningMessage = '';
+              }
+            } catch (error) {
+              console.error('Error checking Corrigo quote status:', error);
+              // On error, allow quote creation (fail open)
+              this.clearCorrigoWarning();
+            }
+          },
+          
+          clearCorrigoWarning() {
+            this.corrigoQuoteStatus = null;
+            this.corrigoWarningMessage = '';
+            this.isCorrigoQuoteBlocked = false;
+          },
+          
+          async autofillFromRecord() {
+            const context = window.facilioApp.getContext();
+            if (!(context && context.record && Object.keys(context.record).length > 0 && this.portalType === 'FACILIO')) return;
+            
+            // Set flag to prevent watcher interference
+            this.isSettingFromWorkOrder = true;
+            
+            try {
+              const record = context.record;
+
+              // 1. Subject & Description
+              this.formModel.subject = record.subject || '';
+              this.formModel.description = record.description || '';
+
+              // 2. Work Order
+              if (record.workorder && record.workorder.id) {
+                this.formModel.workOrder = record.workorder.id.toString();
+                // Ensure workOrderOptions contains the work order
+                let wo = this.workOrderOptions.find(w => w.value == this.formModel.workOrder);
+                if (!wo) {
+                  // Fetch from API
+                  try {
+                    const url = `/v3/modules/workorder/${record.workorder.id}?id=${record.workorder.id}&moduleName=workorder`;
+                    const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+                    const workOrder = response.data && response.data.workorder;
+                    if (workOrder) {
+                      this.workOrderOptions.push({
+                        label: workOrder.subject || `Work Order ${workOrder.id}`,
+                        value: workOrder.id.toString(),
+                        siteId: workOrder.siteId || workOrder.site_id
+                      });
+                    }
+                  } catch (e) { console.error('Failed to fetch work order for autofill', e); }
+                }
+              } else {
+                this.formModel.workOrder = null;
+              }
+
+              // 3. Site
+              if (record.siteId) {
+                this.formModel.site = record.siteId.toString();
+                let site = this.siteOptions.find(s => s.value == this.formModel.site);
+                if (!site) {
+                  // Fetch from API
+                  try {
+                    const url = `/v3/modules/site/${record.siteId}?id=${record.siteId}&moduleName=site`;
+                    const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+                    const siteData = response.data && response.data.site;
+                    if (siteData) {
+                      this.siteOptions.push({
+                        label: siteData.name || siteData.site_name,
+                        value: siteData.id.toString(),
+                        clientId: siteData.client_id || siteData.client?.id
+                      });
+                      // Update client meta
+                      if (siteData.client_id || (siteData.client && siteData.client.id)) {
+                        this.siteClientMeta[siteData.client_id || siteData.client.id] = {
+                          id: siteData.client_id || siteData.client.id,
+                          name: (siteData.client && siteData.client.name) || 'Unknown Client'
+                        };
+                      }
+                    }
+                  } catch (e) { console.error('Failed to fetch site for autofill', e); }
+                }
+              } else {
+                this.formModel.site = null;
+              }
+
+              // 4. Client (from site)
+              let clientId = null;
+              let clientName = '';
+              if (this.formModel.site) {
+                let siteObj = this.siteOptions.find(s => s.value == this.formModel.site);
+                if (siteObj) {
+                  clientId = siteObj.clientId;
+                  if (this.siteClientMeta[clientId]) {
+                    clientName = this.siteClientMeta[clientId].name;
+                  }
+                }
+              }
+              this.formModel.client = clientId;
+              this.formModel.clientName = clientName;
+
+              // 5. Line Items
+              if (Array.isArray(record.lineItems)) {
+                // Collect all missing service IDs
+                const missingServiceIds = record.lineItems
+                  .map(item => item.service && item.service.id ? item.service.id.toString() : null)
+                  .filter(id => id && !this.serviceOptions.find(s => s.value == id));
+                // Fetch all missing services in parallel
+                await Promise.all(missingServiceIds.map(async (serviceId) => {
+                  try {
+                    const url = `/v3/modules/service/${serviceId}?id=${serviceId}&moduleName=service`;
+                    const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+                    const service = response.data && response.data.service;
+                    if (service) {
+                      this.serviceOptions.push({
+                        label: service.name || service.service_name || 'Unknown Service',
+                        value: serviceId
+                      });
+                      this.serviceItemsMap[serviceId] = {
+                        description: service.description || '',
+                        sellingPrice: service.sellingPrice || '',
+                        unitPrice: service.unit_price || service.rate || '',
+                        uom: service.uom || null,
+                        tax: service.tax || '',
+                        markup: service.markup || ''
+                      };
+                    }
+                  } catch (e) { console.error('Failed to fetch service for autofill (vendor edit)', e); }
+                }));
+                // Ensure at least as many line items as in record
+                while (this.lineItems.length < record.lineItems.length) {
+                  this.addNewRow();
+                }
+                this.lineItems = this.lineItems.slice(0, record.lineItems.length);
+                for (let i = 0; i < record.lineItems.length; i++) {
+                  const item = record.lineItems[i];
+                  const line = this.lineItems[i];
+                  // Service
+                  line.service = item.service && item.service.id ? item.service.id.toString() : null;
+                  // Description
+                  line.description = item.description || '';
+                  // Unit Price
+                  line.unitPrice = item.unitPrice || '';
+                  // Quantity
+                  line.qty = item.quantity || '';
+                  // UOM
+                  line.uom = 'each'; // Default to 'each' (UOM field is hidden)
+                  // Markup
+                  line.markup = item.markup || '';
+                  // Total
+                  line.total = item.cost || '';
+                }
+              }
+
+              // 6. Additional Charges
+              this.formModel.additionalCharges.shipping = !!record.shippingCharges;
+              this.formModel.additionalCharges.shippingValue = record.shippingCharges || '';
+              this.formModel.additionalCharges.misc = !!record.miscellaneousCharges;
+              this.formModel.additionalCharges.miscValue = record.miscellaneousCharges || '';
+              this.formModel.additionalCharges.adjustment = !!record.adjustmentsCost;
+              this.formModel.additionalCharges.adjustmentValue = record.adjustmentsCost || '';
+              this.formModel.additionalCharges.discount = !!record.discountPercentage;
+              this.formModel.additionalCharges.discountValue = record.discountPercentage || '';
+
+              // 7. Totals (for display only, not form fields)
+              // this.grandTotal = record.totalCost; // Computed
+              // this.subTotal = record.subTotal; // Computed
+            } catch (error) {
+              console.error('Error in autofillFromRecord:', error);
+            } finally {
+              // Clear the flag after a short delay to allow watchers to process
+              setTimeout(() => {
+                this.isSettingFromWorkOrder = false;
+              }, 100);
+            }
+          },
+          
+          // ==========================================
+          // MAINTENANCE PORTAL - CREATE VIA WORKORDER USECASE
+          // ==========================================
+          
+          async autofillFromFormDetails() {
+            const context = window.facilioApp.getContext();
+            if (!(context && context.query && context.query.formDetails && (this.portalType === 'FACILIO' || this.portalType === 'VENDOR_PORTAL'))) return;
+            
+            // Set flag to prevent watcher interference
+            this.isSettingFromWorkOrder = true;
+            
+            try {
+              const details = JSON.parse(context.query.formDetails);
+              
+              if (details.subject) this.formModel.subject = details.subject;
+              
+              // Work Order - fetch details by ID (check both workorder and quoteWorkOrder)
+              const workOrderId = details.workorder || details.quoteWorkOrder;
+              if (workOrderId) {
+                this.formModel.workOrder = workOrderId.toString();
+                
+                // Always fetch work order details to ensure we have the name
+                try {
+                  const url = `/v3/modules/workorder/${workOrderId}?id=${workOrderId}&moduleName=workorder`;
+                  const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+                  const workOrder = response.data && response.data.workorder;
+                  if (workOrder) {
+                    
+                    // Add to workOrderOptions if not present
+                    const existingOption = this.workOrderOptions.find(w => w.value == this.formModel.workOrder);
+                    if (!existingOption) {
+                      this.workOrderOptions.push({
+                        label: workOrder.subject || `Work Order ${workOrder.id}`,
+                        value: workOrder.id.toString(),
+                        siteId: workOrder.siteId || workOrder.site_id
+                      });
+                    }
+                  }
+                } catch (e) { 
+                  console.error('Failed to fetch work order for autofill (formDetails)', e); 
+                }
+              }
+              
+              // Site - fetch details by ID (check both siteId and quoteSite)
+              const siteId = details.siteId || details.quoteSite;
+              if (siteId) {
+                
+                // IMPORTANT: Fetch site details BEFORE setting formModel.site to prevent watcher from clearing it
+                try {
+                  const url = `/v3/modules/site/${siteId}?id=${siteId}&moduleName=site`;
+                  const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+                  const siteData = response.data && response.data.site;
+                  if (siteData) {
+                    
+                    // Add to siteOptions if not present
+                    const existingOption = this.siteOptions.find(s => s.value == details.siteId.toString());
+                    if (!existingOption) {
+                      const newSiteOption = {
+                        label: siteData.name || siteData.site_name,
+                        value: siteData.id.toString(),
+                        clientId: siteData.client_id || (siteData.client && siteData.client.id)
+                      };
+                      this.siteOptions.push(newSiteOption);
+                      
+                      // Update client metadata if available
+                      if (siteData.client_id || (siteData.client && siteData.client.id)) {
+                        this.siteClientMeta[siteData.client_id || siteData.client.id] = {
+                          id: siteData.client_id || siteData.client.id,
+                          name: (siteData.client && siteData.client.name) || 'Unknown Client'
+                        };
+                        }
+                    }
+                  }
+                } catch (e) { 
+                  console.error('Failed to fetch site for autofill (formDetails)', e); 
+                }
+                
+                // Now set the site ID on the form after fetching details
+                this.formModel.site = siteId.toString();
+                
+                // Force Vue to recalculate computed properties
+                this.$forceUpdate();
+              }
+              
+              // Set client and clientName from site or from formDetails
+              let clientId = null;
+              let clientName = '';
+              
+              // If client is provided in formDetails, use it directly (check both client and quoteclientId)
+              const clientFromDetails = details.client || details.quoteclientId;
+              if (clientFromDetails) {
+                clientId = clientFromDetails.toString();
+                // Try to get client name from existing metadata
+                if (this.siteClientMeta[clientId]) {
+                  clientName = this.siteClientMeta[clientId].name;
+                }
+              } else if (this.formModel.site) {
+                // Fallback to getting client from site
+                let siteObj = this.siteOptions.find(s => s.value == this.formModel.site);
+                if (siteObj) {
+                  clientId = siteObj.clientId;
+                  if (this.siteClientMeta[clientId]) {
+                    clientName = this.siteClientMeta[clientId].name;
+                  }
+                }
+              }
+              
+              this.formModel.client = clientId;
+              this.formModel.clientName = clientName;
+              
+              // Fetch line items from the original quote if quoteId1 is provided
+              if (details.quoteId1) {
+                try {
+                  const quoteUrl = `/v3/modules/quote/${details.quoteId1}?id=${details.quoteId1}&moduleName=quote`;
+                  const quoteResponse = await window.facilioApp.request.invokeFacilioAPI(quoteUrl, { method: 'GET' });
+                  
+                  if (quoteResponse.data && quoteResponse.data.quote && quoteResponse.data.quote.lineItems) {
+                    const originalLineItems = quoteResponse.data.quote.lineItems;
+                    
+                    // Clear existing line items and add the ones from the original quote
+                    this.lineItems = [];
+                    this.nextId = 1;
+                    
+                    // Collect unique service IDs from line items for efficient filtering
+                    const usedServiceIds = new Set();
+                    
+                    for (let i = 0; i < originalLineItems.length; i++) {
+                      const originalItem = originalLineItems[i];
+                      
+                      const newItem = {
+                        id: this.nextId++,
+                        type: 'service',
+                        service: originalItem.service?.id ? originalItem.service.id.toString() : null,
+                        description: originalItem.description || '',
+                        unitPrice: originalItem.unitPrice || '0',
+                        qty: originalItem.qty || '1',
+                        markup: originalItem.markup || '0',
+                        tax: originalItem.tax || '0',
+                        uom: originalItem.uom || null,
+                        total: originalItem.total || '0'
+                      };
+                      
+                      this.lineItems.push(newItem);
+                      
+                      // Collect service ID for later filtering
+                      if (newItem.service) {
+                        usedServiceIds.add(newItem.service);
+                      }
+                    }
+                    
+                    // For maintenance portal revise mode, fetch services for used line items first
+                    if (!this.isVendorPortal && usedServiceIds.size > 0) {
+                      await this.fetchServicesForUsedLineItems(Array.from(usedServiceIds));
+                    }
+                  } else {
+                  }
+                } catch (e) {
+                  console.error('Failed to fetch line items from original quote:', e);
+                }
+              }
+              
+              // vendor portal removed
+              
+            } catch (e) {
+              console.error('Failed to parse formDetails from context:', e);
+            } finally {
+              // Clear the flag after a longer delay to allow site field to update properly
+              setTimeout(() => {
+                this.isSettingFromWorkOrder = false;
+              if (this.formModel.site && !this.formModel.client) {
+                const siteObj = this.siteOptions.find(s => String(s.value) === String(this.formModel.site));
+                if (siteObj && siteObj.clientId) {
+                  const clientMeta = this.siteClientMeta[siteObj.clientId];
+                  this.formModel.clientName = clientMeta ? clientMeta.name : '';
+                  this.formModel.client = siteObj.clientId;
+                }
+              }
+              }, 500);
+            }
+          },
+          
+          // ==========================================
+          // MAINTENANCE PORTAL - CONVERT TO USER QUOTE USECASE
+          // ==========================================
+          
+          async autofillFromConversion() {
+            const context = window.facilioApp.getContext();
+            if (!(context && context.record && Object.keys(context.record).length > 0)) {
+              return;
+            }
+            
+            // Set flag to prevent watcher interference
+            this.isSettingFromWorkOrder = true;
+            
+            try {
+              const record = context.record;
+              
+              // 1. Subject & Description
+              this.formModel.subject = record.subject || '';
+              this.formModel.description = record.description || '';
+
+              // 2. Work Order (if available)
+              if (record.workorder && record.workorder.id) {
+                this.formModel.workOrder = record.workorder.id.toString();
+                
+                // Fetch work order details if not in options
+                let wo = this.workOrderOptions.find(w => w.value == this.formModel.workOrder);
+                if (!wo) {
+                  try {
+                    const url = `/v3/modules/workorder/${record.workorder.id}?id=${record.workorder.id}&moduleName=workorder`;
+                    const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+                    const workOrder = response.data && response.data.workorder;
+                    if (workOrder) {
+                      this.workOrderOptions.push({
+                        label: workOrder.subject || `Work Order ${workOrder.id}`,
+                        value: workOrder.id.toString(),
+                        siteId: workOrder.siteId || workOrder.site_id
+                      });
+                    }
+                  } catch (e) { 
+                    console.error('Failed to fetch work order for conversion autofill', e); 
+                  }
+                }
+              }
+
+              // 3. Site (if available)
+              if (record.siteId) {
+                this.formModel.site = record.siteId.toString();
+                
+                // Fetch site details if not in options
+                let site = this.siteOptions.find(s => s.value == this.formModel.site);
+                if (!site) {
+                  try {
+                    const url = `/v3/modules/site/${record.siteId}?id=${record.siteId}&moduleName=site`;
+                    const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+                    const siteData = response.data && response.data.site;
+                    if (siteData) {
+                      this.siteOptions.push({
+                        label: siteData.name || siteData.site_name,
+                        value: siteData.id.toString(),
+                        clientId: siteData.client_id || siteData.client?.id
+                      });
+                      
+                      // Update client metadata if available
+                      if (siteData.client_id || (siteData.client && siteData.client.id)) {
+                        this.siteClientMeta[siteData.client_id || siteData.client.id] = {
+                          id: siteData.client_id || siteData.client.id,
+                          name: (siteData.client && siteData.client.name) || 'Unknown Client'
+                        };
+                      }
+                    }
+                  } catch (e) { 
+                    console.error('Failed to fetch site for conversion autofill', e); 
+                  }
+                }
+              }
+
+              // 4. Client (from site)
+              let clientId = null;
+              let clientName = '';
+              if (this.formModel.site) {
+                let siteObj = this.siteOptions.find(s => s.value == this.formModel.site);
+                if (siteObj) {
+                  clientId = siteObj.clientId;
+                  if (this.siteClientMeta[clientId]) {
+                    clientName = this.siteClientMeta[clientId].name;
+                  }
+                }
+              }
+              this.formModel.client = clientId;
+              this.formModel.clientName = clientName;
+
+              // 5. Quotation Type and Rate Card Type (if available)
+              if (record.customerType !== undefined) {
+                this.formModel.quotationType = record.customerType === 2 || record.customerTypeEnum === 'CLIENT' ? 'client' : 'vendor';
+              }
+              
+              if (record.rate_card_type_quote !== undefined) {
+                this.formModel.rateCardType = record.rate_card_type_quote === 1 ? 'planned' : 'reactive';
+              }
+
+              // 6. Line Items
+              if (Array.isArray(record.lineItems)) {
+                // Collect all missing service IDs
+                const missingServiceIds = record.lineItems
+                  .map(item => item.service && item.service.id ? item.service.id.toString() : null)
+                  .filter(id => id && !this.serviceOptions.find(s => s.value == id));
+                
+                // Fetch all missing services in parallel
+                await Promise.all(missingServiceIds.map(async (serviceId) => {
+                  try {
+                    const url = `/v3/modules/service/${serviceId}?id=${serviceId}&moduleName=service`;
+                    const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+                    const service = response.data && response.data.service;
+                    if (service) {
+                      this.serviceOptions.push({
+                        label: service.name || service.service_name || 'Unknown Service',
+                        value: serviceId
+                      });
+                      this.serviceItemsMap[serviceId] = {
+                        description: service.description || '',
+                        sellingPrice: service.sellingPrice || '',
+                        unitPrice: service.unit_price || service.rate || '',
+                        uom: service.uom || null,
+                        tax: service.tax || '',
+                        markup: service.markup || ''
+                      };
+                    }
+                  } catch (e) { 
+                    console.error('Failed to fetch service for conversion autofill', e); 
+                  }
+                }));
+                
+                // Ensure at least as many line items as in record
+                while (this.lineItems.length < record.lineItems.length) {
+                  this.addNewRow();
+                }
+                this.lineItems = this.lineItems.slice(0, record.lineItems.length);
+                
+                for (let i = 0; i < record.lineItems.length; i++) {
+                  const item = record.lineItems[i];
+                  const line = this.lineItems[i];
+                  
+                  // Service
+                  line.service = item.service && item.service.id ? item.service.id.toString() : null;
+                  // Description
+                  line.description = item.description || '';
+                  // Unit Price
+                  line.unitPrice = item.unitPrice || '';
+                  // Quantity
+                  line.qty = item.quantity || '';
+                  // UOM
+                  line.uom = 'each'; // Default to 'each' (UOM field is hidden)
+                  // Markup
+                  line.markup = item.markup || '';
+                  // Total
+                  line.total = item.cost || '';
+                  
+                }
+              }
+
+              // 7. Additional Charges (if available)
+              if (record.shippingCharges !== undefined) {
+                this.formModel.additionalCharges.shipping = !!record.shippingCharges;
+                this.formModel.additionalCharges.shippingValue = record.shippingCharges || '';
+              }
+              if (record.miscellaneousCharges !== undefined) {
+                this.formModel.additionalCharges.misc = !!record.miscellaneousCharges;
+                this.formModel.additionalCharges.miscValue = record.miscellaneousCharges || '';
+              }
+              if (record.adjustmentsCost !== undefined) {
+                this.formModel.additionalCharges.adjustment = !!record.adjustmentsCost;
+                this.formModel.additionalCharges.adjustmentValue = record.adjustmentsCost || '';
+              }
+              if (record.discountPercentage !== undefined) {
+                this.formModel.additionalCharges.discount = !!record.discountPercentage;
+                this.formModel.additionalCharges.discountValue = record.discountPercentage || '';
+              }
+              
+            } catch (error) {
+              console.error('Error in autofillFromConversion:', error);
+            } finally {
+              // Clear the flag after a short delay to allow watchers to process
+              setTimeout(() => {
+                this.isSettingFromWorkOrder = false;
+              }, 100);
+            }
+          },
+          
+          // ==========================================
+          // VENDOR PORTAL - CREATE VIA WORKORDER USECASE
+          // ==========================================
+          // Note: autofillFromFormDetails() handles vendor portal create via workorder
+          // This method is in the "MAINTENANCE PORTAL - CREATE VIA WORKORDER USECASE" section
+          // but also handles vendor portal create via workorder
+          
+          // ==========================================
+          // SHARED - DATA FETCHING METHODS
+          // ==========================================
+          // These methods fetch data used across multiple portals/use cases
+          
+          // ==========================================
+          // MAINTENANCE PORTAL - REVISE USECASE
+          // ==========================================
+          
+          async autofillFromRevise(quoteId1) {
+            
+            // Set edit mode for maintenance portal revise form
+            this.isEditMode = true;
+            this.quoteId = quoteId1;
+            
+            // Set flag to prevent watcher interference
+            this.isSettingFromWorkOrder = true;
+            
+            try {
+              // Fetch quote details using the API endpoint
+              const url = `/v3/modules/quote/${quoteId1}?id=${quoteId1}&moduleName=quote`;
+              
+              const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+              
+              if (!response.data || !response.data.quote) {
+                console.error('DEBUG: autofillFromRevise - no quote data in response');
+                return;
+              }
+              
+              const quote = response.data.quote;
+              
+              // 1. Subject & Description
+              this.formModel.subject = quote.subject || '';
+              this.formModel.description = quote.description || '';
+
+              // 2. Work Order (if available)
+              if (quote.workorder && quote.workorder.id) {
+                this.formModel.workOrder = quote.workorder.id.toString();
+                
+                // Fetch work order details if not in options
+                let wo = this.workOrderOptions.find(w => w.value == this.formModel.workOrder);
+                if (!wo) {
+                  try {
+                    const woUrl = `/v3/modules/workorder/${quote.workorder.id}?id=${quote.workorder.id}&moduleName=workorder`;
+                    const woResponse = await window.facilioApp.request.invokeFacilioAPI(woUrl, { method: 'GET' });
+                    const workOrder = woResponse.data && woResponse.data.workorder;
+                    if (workOrder) {
+                      this.workOrderOptions.push({
+                        label: workOrder.subject || `Work Order ${workOrder.id}`,
+                        value: workOrder.id.toString(),
+                        siteId: workOrder.siteId || workOrder.site_id
+                      });
+                    }
+                  } catch (e) { 
+                    console.error('Failed to fetch work order for revise autofill', e); 
+                  }
+                }
+              }
+
+              // 3. Site (if available)
+              if (quote.siteId) {
+                this.formModel.site = quote.siteId.toString();
+                
+                // Fetch site details if not in options
+                let site = this.siteOptions.find(s => s.value == this.formModel.site);
+                if (!site) {
+                  try {
+                    const siteUrl = `/v3/modules/site/${quote.siteId}?id=${quote.siteId}&moduleName=site`;
+                    const siteResponse = await window.facilioApp.request.invokeFacilioAPI(siteUrl, { method: 'GET' });
+                    const siteData = siteResponse.data && siteResponse.data.site;
+                    if (siteData) {
+                      this.siteOptions.push({
+                        label: siteData.name || siteData.site_name,
+                        value: siteData.id.toString(),
+                        clientId: siteData.client_id || siteData.client?.id
+                      });
+                      
+                      // Update client metadata if available
+                      if (siteData.client_id || (siteData.client && siteData.client.id)) {
+                        this.siteClientMeta[siteData.client_id || siteData.client.id] = {
+                          id: siteData.client_id || siteData.client.id,
+                          name: (siteData.client && siteData.client.name) || 'Unknown Client'
+                        };
+                      }
+                    }
+                  } catch (e) { 
+                    console.error('Failed to fetch site for revise autofill', e); 
+                  }
+                }
+              }
+
+              // 4. Client (from site or direct)
+              let clientId = null;
+              let clientName = '';
+              if (quote.client && quote.client.id) {
+                clientId = quote.client.id.toString();
+                clientName = quote.client.name || quote.client.primaryValue || 'Unknown Client';
+              } else if (this.formModel.site) {
+                let siteObj = this.siteOptions.find(s => s.value == this.formModel.site);
+                if (siteObj) {
+                  clientId = siteObj.clientId;
+                  if (this.siteClientMeta[clientId]) {
+                    clientName = this.siteClientMeta[clientId].name;
+                  }
+                }
+              }
+              this.formModel.client = clientId;
+              this.formModel.clientName = clientName;
+
+              // 5. Quotation Type and Rate Card Type (if available)
+              if (quote.customerType !== undefined) {
+                this.formModel.quotationType = quote.customerType === 2 || quote.customerTypeEnum === 'CLIENT' ? 'client' : 'vendor';
+              }
+              
+              if (quote.rate_card_type_quote !== undefined) {
+                this.formModel.rateCardType = quote.rate_card_type_quote === 1 ? 'planned' : 'reactive';
+              }
+
+              // 6. Line Items
+              if (Array.isArray(quote.lineItems)) {
+                // Collect all missing service IDs
+                const missingServiceIds = quote.lineItems
+                  .map(item => item.service && item.service.id ? item.service.id.toString() : null)
+                  .filter(id => id && !this.serviceOptions.find(s => s.value == id));
+                
+                // Fetch all missing services in parallel
+                await Promise.all(missingServiceIds.map(async (serviceId) => {
+                  try {
+                    const serviceUrl = `/v3/modules/service/${serviceId}?id=${serviceId}&moduleName=service`;
+                    const serviceResponse = await window.facilioApp.request.invokeFacilioAPI(serviceUrl, { method: 'GET' });
+                    const service = serviceResponse.data && serviceResponse.data.service;
+                    if (service) {
+                      this.serviceOptions.push({
+                        label: service.name || service.service_name || 'Unknown Service',
+                        value: serviceId
+                      });
+                      this.serviceItemsMap[serviceId] = {
+                        description: service.description || '',
+                        sellingPrice: service.sellingPrice || '',
+                        unitPrice: service.unit_price || service.rate || '',
+                        uom: service.uom || null,
+                        tax: service.tax || '',
+                        markup: service.markup || ''
+                      };
+                    }
+                  } catch (e) { 
+                    console.error('Failed to fetch service for revise autofill', e); 
+                  }
+                }));
+                
+                // Ensure at least as many line items as in quote
+                while (this.lineItems.length < quote.lineItems.length) {
+                  this.addNewRow();
+                }
+                this.lineItems = this.lineItems.slice(0, quote.lineItems.length);
+                
+                for (let i = 0; i < quote.lineItems.length; i++) {
+                  const item = quote.lineItems[i];
+                  const line = this.lineItems[i];
+                  
+                  // Service
+                  line.service = item.service && item.service.id ? item.service.id.toString() : null;
+                  // Description
+                  line.description = item.description || '';
+                  // Unit Price
+                  line.unitPrice = item.unitPrice || '';
+                  // Quantity
+                  line.qty = item.quantity || '';
+                  // UOM
+                  line.uom = 'each'; // Default to 'each' (UOM field is hidden)
+                  // Markup
+                  line.markup = item.markup || '';
+                  // Total
+                  line.total = item.cost || '';
+                  
+                }
+              }
+
+              // 7. Additional Charges (if available)
+              if (quote.shippingCharges !== undefined) {
+                this.formModel.additionalCharges.shipping = !!quote.shippingCharges;
+                this.formModel.additionalCharges.shippingValue = quote.shippingCharges || '';
+              }
+              if (quote.miscellaneousCharges !== undefined) {
+                this.formModel.additionalCharges.misc = !!quote.miscellaneousCharges;
+                this.formModel.additionalCharges.miscValue = quote.miscellaneousCharges || '';
+              }
+              if (quote.adjustmentsCost !== undefined) {
+                this.formModel.additionalCharges.adjustment = !!quote.adjustmentsCost;
+                this.formModel.additionalCharges.adjustmentValue = quote.adjustmentsCost || '';
+              }
+              if (quote.discountPercentage !== undefined) {
+                this.formModel.additionalCharges.discount = !!quote.discountPercentage;
+                this.formModel.additionalCharges.discountValue = quote.discountPercentage || '';
+              }
+              
+              // Set flag to indicate we're in revise mode with pre-loaded services
+              // This prevents fetchFilteredServiceItems from replacing services that were just added
+              this.isReviseModeWithUsedServices = true;
+              
+            } catch (error) {
+              console.error('Error in autofillFromRevise:', error);
+            } finally {
+              // Clear the flag after a short delay to allow watchers to process
+              setTimeout(() => {
+                this.isSettingFromWorkOrder = false;
+              }, 100);
+            }
+          },
+          searchWorkOrders(query) {
+            this.matchedWorkOrders = [];
+            this.searchingWorkOrders = true;
+            // Use the default param to always include the selected work order
+            const defaultId = this.formModel.workOrder ? this.formModel.workOrder : '';
+            const url = `/v3/picklist/workorder?search=${encodeURIComponent(query)}&default=${defaultId}&viewName=hidden-all`;
+            window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' })
+              .then((response) => {
+                this.searchingWorkOrders = false;
+                let results = response.data.picklist || response.data.pickList || [];
+                this.matchedWorkOrders = [...results];
+                // Optionally, add to workOrderOptions if not present
+                results.forEach(wo => {
+                  if (!this.workOrderOptions.find(w => w.value === wo.value)) {
+                    this.workOrderOptions.push(wo);
+                  }
+                });
+              })
+              .catch(() => {
+                this.searchingWorkOrders = false;
+                this.matchedWorkOrders = [];
+              });
+          },
+          searchSites(query) {
+            this.matchedSites = [];
+            this.searchingSites = true;
+            
+            // If query is empty, show all available sites from siteOptions
+            if (!query || query.trim() === '') {
+              this.matchedSites = [...this.siteOptions];
+              this.searchingSites = false;
+              return;
+            }
+            
+            // Use the default param to always include the selected site
+            const defaultId = this.formModel.site ? this.formModel.site : '';
+            const url = `/v3/picklist/site?search=${encodeURIComponent(query)}&default=${defaultId}&viewName=hidden-all`;
+            window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' })
+              .then((response) => {
+                this.searchingSites = false;
+                let results = response.data.picklist || response.data.pickList || [];
+                this.matchedSites = [...results];
+                // Optionally, add to siteOptions if not present
+                results.forEach(site => {
+                  if (!this.siteOptions.find(s => s.value === site.value)) {
+                    this.siteOptions.push({
+                      label: site.label || site.name || site.site_name,
+                      value: site.value || site.id || site.site_id,
+                      clientId: site.client_id || site.client?.id
+                    });
+                  }
+                });
+              })
+              .catch(() => {
+                this.searchingSites = false;
+                this.matchedSites = [];
+              });
+          },
+          
+          // ==========================================
+          // SHARED - SERVICE FILTERING & SORTING UTILITIES
+          // ==========================================
+          
+          filterServiceOptions(options, itemsMap) {
+            const seen = {};
+            const filtered = options.filter(opt => {
+              const svc = itemsMap[opt.value];
+              const name = (opt.label || '').trim().toLowerCase();
+              const price = svc && (Number(svc.sellingPrice) || Number(svc.unitPrice) || 0);
+              if ((name === 'non taxable material' || name === 'lump sum non taxable') && price === 0) {
+                if (seen[name]) return false;
+                seen[name] = true;
+                return true;
+              }
+              return true;
+            });
+            return filtered;
+          },
+          
+          // ==========================================
+          // MAINTENANCE PORTAL - CORRIGO WORK ORDER FILTERING
+          // ==========================================
+          
+          async applyWorkOrderServiceFilter(filteredServices) {
+            // Only apply this filter for maintenance portal and when workorder is selected
+            if (this.isVendorPortal || !this.formModel.workOrder) {
+              return filteredServices;
+            }
+            
+            // For vendor quotation type, we already used vendor portal API approach, so skip Corrigo API call
+            if (this.formModel.quotationType === 'vendor') {
+              return filteredServices;
+            }
+            
+            this.isFilteringWorkOrderServices = true;
+            
+            try {
+              const workorderId = this.formModel.workOrder;
+              const workorderUrl = `/v3/modules/workorder/${workorderId}?id=${workorderId}&moduleName=workorder`;
+              const workorderResponse = await window.facilioApp.request.invokeFacilioAPI(workorderUrl, { method: 'GET' });
+              
+              const workorder = workorderResponse.data && workorderResponse.data.workorder;
+              if (!workorder) {
+                return filteredServices;
+              }
+              
+              const corrigoproworkorderid = workorder.corrigoproworkorderid;
+              const priceListIdsWorkorder = workorder.price_list_ids_workorder;
+              
+              if (!corrigoproworkorderid) {
+                return filteredServices;
+              }
+              
+              if (!priceListIdsWorkorder) {
+                return [];
+              }
+              
+              const priceListIds = priceListIdsWorkorder
+                .split(',')
+                .map(id => id.trim())
+                .filter(Boolean);
+              
+              if (!priceListIds.length) {
+                return filteredServices;
+              }
+              
+              const maxIdsPerCall = 50;
+              const recordsPerPage = 50;
+              let allServices = [];
+              
+              const fetchServicesForIds = async (ids) => {
+                const filters = {
+                  client_service: {
+                    operatorId: 36,
+                    value: [String(this.formModel.client)],
+                    operatorLookupModule: {
+                      displayName: 'Clients',
+                      filters: null,
+                      name: 'client',
+                      showPopup: true,
+                      typeEnum: 'BASE_ENTITY'
+                    }
+                  },
+                  rate_card_status_service: {
+                    operatorId: 54,
+                    value: ["1"], // Active
+                    operatorLookupModule: null
+                  },
+                  rate_card_type_service: {
+                    operatorId: 54,
+                    value: ["1"], // Reactive
+                    operatorLookupModule: null
+                  },
+                  service_type_service: {
+                    operatorId: 15,
+                    operatorLookupModule: null,
+                    value: ["false"] // Client
+                  },
+                  oneLevelLookup: {
+                    price_list_item_service: [{
+                      operatorId: 35,
+                      criteriaValue: {
+                        price_list_item_id_custom_pricelistitems: {
+                          operatorId: 9,
+                          value: ids
+                        }
+                      }
+                    }]
+                  }
+                };
+                
+                const filtersParam = encodeURIComponent(JSON.stringify(filters));
+                
+                // First, get the count
+                const countUrl = `/v3/modules/service/view/clientreactive/count?moduleName=service&viewName=clientreactive&filters=${filtersParam}`;
+                const countResponse = await window.facilioApp.request.invokeFacilioAPI(countUrl, { method: 'GET' });
+                const totalCount = (countResponse.data && countResponse.data.count) || 0;
+                
+                if (totalCount === 0) {
+                  return [];
+                }
+                
+                // Calculate number of pages needed
+                const totalPages = Math.ceil(totalCount / recordsPerPage);
+                let services = [];
+                
+                // Fetch all pages
+                for (let page = 1; page <= totalPages; page++) {
+                  const url = `/v3/modules/service/view/clientreactive?fetchOnlyViewGroupColumn=true&moduleName=service&viewName=clientreactive&filters=${filtersParam}&page=${page}&perPage=${recordsPerPage}&search=&withoutCustomButtons=true`;
+                  const response = await window.facilioApp.request.invokeFacilioAPI(url, { method: 'GET' });
+                  const pageServices = (response.data && response.data.service) || [];
+                  services = services.concat(pageServices);
+                }
+                
+                return services;
+              };
+              
+              if (priceListIds.length > maxIdsPerCall) {
+                for (let i = 0; i < priceListIds.length; i += maxIdsPerCall) {
+                  const batch = priceListIds.slice(i, i + maxIdsPerCall);
+                  const batchServices = await fetchServicesForIds(batch);
+                  allServices = allServices.concat(batchServices);
+                }
+              } else {
+                allServices = await fetchServicesForIds(priceListIds);
+              }
+              
+              if (!allServices.length) {
+                return [];
+              }
+              
+              const validServices = allServices.map(service => ({
+                label: service.name || service.primaryValue || `Service ${service.id}`,
+                value: service.id.toString(),
+                unitPrice: service.sellingPrice || service.unitPrice || '0',
+                uom: service.uom || null,
+                tax: service.tax || '0'
+              }));
+              
+              const isEditMode = this.isReviseModeWithUsedServices || this.isEditMode;
+              const servicesToPreserve = [];
+              
+              if (isEditMode && this.lineItems && this.lineItems.length > 0) {
+                const usedServiceIds = this.lineItems
+                  .map(item => item.service)
+                  .filter(id => id);
+                
+                usedServiceIds.forEach(serviceId => {
+                  const inCorrigoList = validServices.some(s => s.value == serviceId);
+                  
+                  if (!inCorrigoList) {
+                    const existingService = filteredServices.find(s => s.value == serviceId);
+                    if (existingService) {
+                      const serviceName = (existingService.label || '').trim().toLowerCase();
+                      const isNonTaxableMaterial = serviceName === 'non taxable material' || serviceName === 'lump sum non taxable';
+                      
+                      if (isNonTaxableMaterial) {
+                        servicesToPreserve.push(existingService);
+                      }
+                    }
+                  }
+                });
+              }
+              
+              const mergedServices = [...validServices];
+              
+              servicesToPreserve.forEach(preservedService => {
+                const alreadyExists = mergedServices.some(s => s.value == preservedService.value);
+                if (!alreadyExists) {
+                  mergedServices.push(preservedService);
+                }
+              });
+              
+              const seenNonTaxable = {};
+              const filteredMergedServices = mergedServices.filter(service => {
+                const serviceName = (service.label || '').trim().toLowerCase();
+                const price = Number(service.unitPrice) || 0;
+                
+                if ((serviceName === 'non taxable material' || serviceName === 'lump sum non taxable') && price === 0) {
+                  if (seenNonTaxable[serviceName]) {
+                    return false;
+                  }
+                  seenNonTaxable[serviceName] = true;
+                }
+                
+                return true;
+              });
+              
+              return filteredMergedServices;
+              
+            } catch (error) {
+              console.error('Error in Corrigo work order service filter:', error);
+              return filteredServices;
+            } finally {
+              this.isFilteringWorkOrderServices = false;
+              // Check if validations are complete (for edit mode)
+              this.checkValidationsComplete();
+            }
+          },
+          isDescriptionRequired(item) {
+            const serviceObj = this.serviceOptions.find(s => s.value == item.service);
+            const serviceName = serviceObj ? (serviceObj.label || '').trim().toLowerCase() : '';
+            return (
+              (serviceName === 'non taxable material' || serviceName === 'lump sum non taxable') &&
+              (!item.description || !item.description.trim())
+            );
+          },
+          sortServicesByCategory(serviceOptions, serviceData) {
+            // Create a map of service ID to category_service_1 value
+            const categoryMap = {};
+            serviceData.forEach(service => {
+              const serviceId = service.id || service.service_id;
+              categoryMap[serviceId] = service.category_service_1 || 0;
+            });
+            
+            // Sort service options by category_service_1 enum (1-4)
+            return serviceOptions.sort((a, b) => {
+              const categoryA = categoryMap[a.value] || 0; 
+              const categoryB = categoryMap[b.value] || 0;
+              return categoryA - categoryB;
+            });
+          },
+          // ==========================================
+          // SHARED - FORM SUBMISSION HANDLER
+          // ==========================================
+          // Routes to appropriate submit method based on mode
+          
+          async handleSubmit() {
+            // Prevent duplicate submissions - IMMEDIATE CHECK
+            if (this.isSubmitting) {
+              return;
+            }
+            
+            // Check if form is ready for submission
+            if (!this.isFormReadyForSubmission) {
+              if (!this.isVendorPortal && this.hasInvalidLineItems) {
+                this.showNotification('Some line items are invalid based on current filters. Please remove or update them before submitting.');
+              } else {
+                this.showNotification('Please fill all required fields before submitting');
+              }
+              return; 
+            } 
+            
+            // IMMEDIATELY set submitting state to prevent multiple clicks
+            this.isSubmitting = true; 
+            
+            try {
+              if (this.isEditMode) { 
+                await this.onSaveEdit();
+              } else {
+                await this.onSubmit();
+              }
+            } catch (error) {
+              console.error('Error in handleSubmit:', error);
+            }
+          }
+      },
+    });
+      </script>
+
+
+  </div>
+</body>
+  
+</html>  
