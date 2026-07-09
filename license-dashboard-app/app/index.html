@@ -11,22 +11,23 @@
     <script src="//unpkg.com/element-ui/lib/umd/locale/en.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root{--primary:#1257a8;--ink:#1b2430;--muted:#5b6472;--line:#e5e9f0;--bg:#f5f7fb;--card:#fff;--ok:#10b981;--warn:#f59e0b;--crit:#ef4444;--ok-s:#e6f7f0;--warn-s:#fdf2e0;--crit-s:#fdeaea;--pri-s:#e6effa;}
+        :root{--primary:#1257a8;--ink:#1b2430;--muted:#5b6472;--line:#e5e9f0;--bg:#f5f7fb;--card:#fff;--ok:#10b981;--warn:#f59e0b;--crit:#ef4444;--ok-s:#e6f7f0;--warn-s:#fdf2e0;--crit-s:#fdeaea;--pri-s:#e6effa;--vendor:#b45309;--tenant:#10b981;--verify:#475569;}
         *{box-sizing:border-box;}
         body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
         .wrap{max-width:1180px;margin:0 auto;padding:22px;}
         .head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;}
-        .brand{font-size:15px;font-weight:700;color:var(--primary);}
-        .h1{font-size:23px;font-weight:800;margin:14px 0 2px;letter-spacing:-.01em;}
+        .brand{font-size:16px;font-weight:800;color:var(--primary);}
+        .h1{font-size:24px;font-weight:800;margin:14px 0 2px;letter-spacing:-.01em;}
         .sub{color:var(--muted);font-size:13px;}
         .updated{color:var(--muted);font-size:12px;}
         .filters{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:16px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;}
         .fitem{display:flex;flex-direction:column;gap:5px;}
         .flabel{font-size:12px;color:var(--muted);font-weight:600;}
-        .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px;}
-        @media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr);}}
-        @media(max-width:520px){.cards{grid-template-columns:1fr;}}
-        .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;min-height:140px;display:flex;flex-direction:column;gap:10px;}
+        .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px;}
+        @media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr);}}
+        @media(max-width:520px){.grid4{grid-template-columns:1fr;}}
+        .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;}
+        .lic-card{min-height:140px;}
         .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
         .card-name{font-size:13px;font-weight:700;color:var(--muted);line-height:1.3;}
         .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;}
@@ -37,11 +38,16 @@
         .count small{font-size:13px;font-weight:600;color:var(--muted);}
         .track{height:6px;border-radius:999px;background:#eef1f6;overflow:hidden;}
         .track>span{display:block;height:100%;border-radius:999px;background:var(--primary);}
-        .fill-ok{background:var(--primary)!important;}
-        .fill-warn{background:var(--warn)!important;}
-        .fill-crit{background:var(--crit)!important;}
+        .fill-ok{background:var(--primary)!important;}.fill-warn{background:var(--warn)!important;}.fill-crit{background:var(--crit)!important;}
         .foot{font-size:12px;color:var(--muted);}
         .foot.crit{color:var(--crit);font-weight:700;}
+        .ring-card{align-items:center;text-align:center;}
+        .ring-title{font-size:13px;font-weight:700;color:var(--muted);align-self:flex-start;}
+        .ring-wrap{position:relative;width:120px;height:120px;margin:6px auto;}
+        .ring-wrap svg{transform:rotate(-90deg);}
+        .ring-val{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:20px;font-weight:800;}
+        .ring-leg{display:flex;gap:16px;font-size:12px;color:var(--muted);}
+        .dotL{display:inline-block;width:8px;height:8px;border-radius:999px;margin-right:5px;vertical-align:middle;}
         .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-top:16px;}
         .panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
         .panel-title{font-size:16px;font-weight:800;}
@@ -51,7 +57,6 @@
         .dot.g{background:var(--ok);}.dot.x{background:#c2c8d2;}
         .loading,.errbox{text-align:center;color:var(--muted);padding:40px;}
         .errbox{color:var(--crit);}
-        .toolbtn{cursor:pointer;}
     </style>
 </head>
 <body>
@@ -63,7 +68,6 @@
     <div class="h1">License Utilization &amp; User Management</div>
     <div class="sub">Contract license monitoring · portal usage · verification status</div>
 
-    <!-- FILTERS -->
     <div class="filters">
         <div class="fitem" style="min-width:180px;">
             <span class="flabel">Type</span>
@@ -91,39 +95,39 @@
 
     <template v-else-if="loaded">
     <div id="capture">
-        <!-- CARDS -->
-        <div class="cards">
-            <div class="card" v-for="c in cards" :key="c.key">
+        <div class="grid4">
+            <div class="card lic-card" v-for="c in cards" :key="c.key">
                 <div class="card-top">
                     <div class="card-name">{{ c.label }}</div>
                     <div class="badge" :class="badgeClass(c.pct)">{{ c.pct }}% used</div>
                 </div>
                 <div class="count">{{ c.added }}<small> / {{ c.contract }} contracted</small></div>
                 <div class="track"><span :class="fillClass(c.pct)" :style="{width: Math.min(100,c.pct)+'%'}"></span></div>
-                <div class="foot" :class="{crit: (c.contract - c.added) <= 0}">
-                    <template v-if="(c.contract - c.added) > 0">{{ c.contract - c.added }} slots remaining</template>
+                <div class="foot" :class="{crit:(c.contract-c.added)<=0}">
+                    <template v-if="(c.contract-c.added)>0">{{ c.contract-c.added }} slots remaining</template>
                     <template v-else>Limit reached</template>
                 </div>
             </div>
         </div>
 
-        <!-- SUMMARY -->
-        <div class="cards">
-            <div class="card" style="min-height:auto;">
-                <div class="card-name">Total added</div><div class="count">{{ totalAdded }}</div>
-            </div>
-            <div class="card" style="min-height:auto;">
-                <div class="card-name">Total licensed (MSA)</div><div class="count">{{ totalContract }}</div>
-            </div>
-            <div class="card" style="min-height:auto;">
-                <div class="card-name">Verified users</div><div class="count">{{ stats.verifiedCount }}</div>
-            </div>
-            <div class="card" style="min-height:auto;">
-                <div class="card-name">Portal access</div><div class="count">{{ stats.portalCount }}</div>
+        <div class="grid4">
+            <div class="card ring-card" v-for="r in rings" :key="r.key">
+                <div class="ring-title">{{ r.title }}</div>
+                <div class="ring-wrap">
+                    <svg width="120" height="120" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="52" fill="none" stroke="#eef1f6" stroke-width="12"></circle>
+                        <circle cx="60" cy="60" r="52" fill="none" :stroke="r.color" stroke-width="12" stroke-linecap="round"
+                            :stroke-dasharray="circ" :stroke-dashoffset="circ - (circ * Math.min(100,r.pct) / 100)"></circle>
+                    </svg>
+                    <div class="ring-val">{{ r.pct }}%</div>
+                </div>
+                <div class="ring-leg">
+                    <span><span class="dotL" :style="{background:r.color}"></span>{{ r.legend }}</span>
+                    <span><span class="dotL" style="background:#e0e4ea;"></span>Free</span>
+                </div>
             </div>
         </div>
 
-        <!-- PIVOT -->
         <div class="panel">
             <div class="panel-head">
                 <div>
@@ -132,18 +136,18 @@
                 </div>
             </div>
             <el-table :data="pagedUsers" style="width:100%" size="small" stripe :default-sort="{prop:'bucket',order:'ascending'}">
-                <el-table-column prop="name" label="User" sortable min-width="160"></el-table-column>
-                <el-table-column prop="email" label="Email" min-width="200"></el-table-column>
-                <el-table-column prop="bucket" label="Type" sortable width="140">
+                <el-table-column prop="name" label="User" sortable min-width="180"></el-table-column>
+                <el-table-column prop="email" label="Email" min-width="220"></el-table-column>
+                <el-table-column prop="bucket" label="Type" sortable width="150">
                     <template slot-scope="s"><span class="tag">{{ s.row.bucket }}</span></template>
                 </el-table-column>
-                <el-table-column label="Status" width="110" sortable prop="active">
+                <el-table-column label="Status" width="130" sortable prop="active">
                     <template slot-scope="s"><span class="dot" :class="s.row.active?'g':'x'"></span>{{ s.row.active?'Active':'Inactive' }}</template>
                 </el-table-column>
-                <el-table-column label="Verified" width="110" sortable prop="verified">
+                <el-table-column label="Verified" width="120" sortable prop="verified">
                     <template slot-scope="s"><span class="dot" :class="s.row.verified?'g':'x'"></span>{{ s.row.verified?'Verified':'Pending' }}</template>
                 </el-table-column>
-                <el-table-column label="Portal" width="100" sortable prop="portal">
+                <el-table-column label="Portal" width="110" sortable prop="portal">
                     <template slot-scope="s"><span class="dot" :class="s.row.portal?'g':'x'"></span>{{ s.row.portal?'Yes':'No' }}</template>
                 </el-table-column>
             </el-table>
@@ -153,75 +157,74 @@
         </div>
     </div>
     </template>
+
     <script type="text/javascript">
         ELEMENT.locale(ELEMENT.lang.en);
-        const CONTRACT_LIMITS = { Admin: 1, Maintenance: 25, Vendor: 100, Tenant: 500 };
-        const LICENSE_STATS_SCRIPT = "Map computeLicenseStats() {\r\n    result = {};\r\n    admin = 0;\r\n    maintenance = 0;\r\n    vendor = 0;\r\n    tenant = 0;\r\n    requester = 0;\r\n    other = 0;\r\n    verifiedCount = 0;\r\n    portalCount = 0;\r\n    userList = [];\r\n    verifiedMap = {};\r\n    portalMap = {};\r\n    allUsers = Module(\"users\").fetch([id > 0]);\r\n    if (allUsers != null) {\r\n        for each ui, u in allUsers {\r\n            if (u.peopleId != null) {\r\n                pid = u.peopleId + \"\";\r\n                portalMap[pid] = true;\r\n                if (u.userVerified == true) {\r\n                    verifiedMap[pid] = true;\r\n                }\r\n            }\r\n        }\r\n    }\r\n    allPeople = Module(\"people\").fetch([id > 0]);\r\n    if (allPeople != null) {\r\n        for each index, p in allPeople {\r\n            bucket = \"Other\";\r\n            if (p.roleId == 531) {\r\n                bucket = \"Admin\";\r\n                admin = admin + 1;\r\n            } else if (p.peopleType == 3) {\r\n                bucket = \"Maintenance\";\r\n                maintenance = maintenance + 1;\r\n            } else if (p.peopleType == 2) {\r\n                bucket = \"Vendor\";\r\n                vendor = vendor + 1;\r\n            } else if (p.peopleType == 1) {\r\n                bucket = \"Tenant\";\r\n                tenant = tenant + 1;\r\n            } else if (p.peopleType == 7) {\r\n                bucket = \"Requester\";\r\n                requester = requester + 1;\r\n            } else {\r\n                other = other + 1;\r\n            }\r\n            pidKey = p.id + \"\";\r\n            isVerified = false;\r\n            hasPortal = false;\r\n            if (verifiedMap[pidKey] == true) {\r\n                isVerified = true;\r\n                verifiedCount = verifiedCount + 1;\r\n            }\r\n            if (portalMap[pidKey] == true) {\r\n                hasPortal = true;\r\n                portalCount = portalCount + 1;\r\n            }\r\n            row = {};\r\n            row.name = p.name;\r\n            row.email = p.email;\r\n            row.peopleType = p.peopleType;\r\n            row.bucket = bucket;\r\n            row.active = p.active;\r\n            row.verified = isVerified;\r\n            row.portal = hasPortal;\r\n            userList.add(row);\r\n        }\r\n    }\r\n    result.admin = admin;\r\n    result.maintenance = maintenance;\r\n    result.vendor = vendor;\r\n    result.tenant = tenant;\r\n    result.requester = requester;\r\n    result.other = other;\r\n    result.verifiedCount = verifiedCount;\r\n    result.portalCount = portalCount;\r\n    result.users = userList;\r\n    return result;\r\n}\r\n";
+        const CONTRACT_LIMITS = { Admin:1, Maintenance:25, Vendor:100, Tenant:500 };
+        const LICENSE_STATS_SCRIPT = "Map computeLicenseStats() {\r\n    result = {};\r\n    admin = 0;\r\n    maintenance = 0;\r\n    vendor = 0;\r\n    tenant = 0;\r\n    requester = 0;\r\n    other = 0;\r\n    activeCount = 0;\r\n    verifiedCount = 0;\r\n    portalCount = 0;\r\n    userList = [];\r\n    verifiedMap = {};\r\n    portalMap = {};\r\n    userFetch = {};\r\n    userFetch.put(\"criteria\", [peopleId > 0]);\r\n    userFetch.put(\"limit\", 5000);\r\n    allUsers = Module(\"users\").fetch(userFetch);\r\n    if (allUsers != null) {\r\n        for each ui, u in allUsers {\r\n            if (u.peopleId != null) {\r\n                pid = u.peopleId + \"\";\r\n                portalMap.put(pid, true);\r\n                if (u.userVerified == true) {\r\n                    verifiedMap.put(pid, true);\r\n                }\r\n            }\r\n        }\r\n    }\r\n    peopleFetch = {};\r\n    peopleFetch.put(\"criteria\", [id > 0]);\r\n    peopleFetch.put(\"limit\", 5000);\r\n    allPeople = Module(\"people\").fetch(peopleFetch);\r\n    if (allPeople != null) {\r\n        for each index, p in allPeople {\r\n            bucket = \"Other\";\r\n            if (p.roleId == 531) {\r\n                bucket = \"Admin\";\r\n                admin = admin + 1;\r\n            } else if (p.peopleType == 3) {\r\n                bucket = \"Maintenance\";\r\n                maintenance = maintenance + 1;\r\n            } else if (p.peopleType == 2) {\r\n                bucket = \"Vendor\";\r\n                vendor = vendor + 1;\r\n            } else if (p.peopleType == 1) {\r\n                bucket = \"Tenant\";\r\n                tenant = tenant + 1;\r\n            } else if (p.peopleType == 7) {\r\n                bucket = \"Requester\";\r\n                requester = requester + 1;\r\n            } else {\r\n                other = other + 1;\r\n            }\r\n            isActive = false;\r\n            if (p.active == true) {\r\n                isActive = true;\r\n                activeCount = activeCount + 1;\r\n            }\r\n            pidKey = p.id + \"\";\r\n            isVerified = false;\r\n            hasPortal = false;\r\n            portalVal = portalMap.get(pidKey);\r\n            if (portalVal != null) {\r\n                hasPortal = true;\r\n                portalCount = portalCount + 1;\r\n            }\r\n            verifiedVal = verifiedMap.get(pidKey);\r\n            if (verifiedVal != null) {\r\n                isVerified = true;\r\n                verifiedCount = verifiedCount + 1;\r\n            }\r\n            row = {};\r\n            row.name = p.name;\r\n            row.email = p.email;\r\n            row.peopleType = p.peopleType;\r\n            row.bucket = bucket;\r\n            row.active = isActive;\r\n            row.verified = isVerified;\r\n            row.portal = hasPortal;\r\n            userList.add(row);\r\n        }\r\n    }\r\n    result.admin = admin;\r\n    result.maintenance = maintenance;\r\n    result.vendor = vendor;\r\n    result.tenant = tenant;\r\n    result.requester = requester;\r\n    result.other = other;\r\n    result.activeCount = activeCount;\r\n    result.verifiedCount = verifiedCount;\r\n    result.portalCount = portalCount;\r\n    result.users = userList;\r\n    return result;\r\n}\r\n";
         var app = new Vue({
-            el: '#app',
-            data: {
-                loading:false, loaded:false, loadError:null, lastUpdated:null,
-                stats:null, users:[], search:'', bucketFilter:'', statusFilter:'',
-                currentPage:1, pageSize:10, currentUser:null,
-            },
-            computed: {
+            el:'#app',
+            data:{ loading:false, loaded:false, loadError:null, lastUpdated:null, stats:null, users:[], search:'', bucketFilter:'', statusFilter:'', currentPage:1, pageSize:10, circ: 2*Math.PI*52 },
+            computed:{
                 cards(){
                     if(!this.stats) return [];
-                    const defs=[
+                    const d=[
                         {key:'admin',label:'CAFM Admin',added:this.stats.admin,contract:CONTRACT_LIMITS.Admin},
                         {key:'maintenance',label:'Maintenance Users',added:this.stats.maintenance,contract:CONTRACT_LIMITS.Maintenance},
                         {key:'vendor',label:'Vendor Users',added:this.stats.vendor,contract:CONTRACT_LIMITS.Vendor},
                         {key:'tenant',label:'Tenant Users',added:this.stats.tenant,contract:CONTRACT_LIMITS.Tenant},
                     ];
-                    return defs.map(d=>({...d,pct:d.contract?Math.round((d.added/d.contract)*100):0}));
+                    return d.map(x=>({...x,pct:x.contract?Math.round((x.added/x.contract)*100):0}));
+                },
+                rings(){
+                    if(!this.stats) return [];
+                    const c=this.cards;
+                    const find=k=>c.find(x=>x.key===k)||{pct:0};
+                    return [
+                        {key:'m',title:'Maintenance Dist.',pct:find('maintenance').pct,color:'#1257a8',legend:'Active'},
+                        {key:'v',title:'Vendor Dist.',pct:find('vendor').pct,color:'#b45309',legend:'Active'},
+                        {key:'t',title:'Tenant Dist.',pct:find('tenant').pct,color:'#10b981',legend:'Active'},
+                        {key:'a',title:'Verification Status',pct:this.users.length?Math.min(100,Math.round((this.stats.verifiedCount/this.users.length)*100)):0,color:'#475569',legend:'Verified'},
+                    ];
                 },
                 totalAdded(){ return this.stats?(this.stats.admin+this.stats.maintenance+this.stats.vendor+this.stats.tenant):0; },
-                totalContract(){ return CONTRACT_LIMITS.Admin+CONTRACT_LIMITS.Maintenance+CONTRACT_LIMITS.Vendor+CONTRACT_LIMITS.Tenant; },
+                totalPeople(){ return this.users.length||1; },
                 bucketOptions(){ return Array.from(new Set(this.users.map(u=>u.bucket))); },
                 filteredUsers(){
-                    let list=this.users;
-                    if(this.bucketFilter) list=list.filter(u=>u.bucket===this.bucketFilter);
-                    if(this.statusFilter) list=list.filter(u=> this.statusFilter==='active'?u.active:!u.active);
-                    if(this.search){ const q=this.search.toLowerCase(); list=list.filter(u=>(u.name&&u.name.toLowerCase().includes(q))||(u.email&&u.email.toLowerCase().includes(q))); }
-                    return list;
+                    let l=this.users;
+                    if(this.bucketFilter) l=l.filter(u=>u.bucket===this.bucketFilter);
+                    if(this.statusFilter) l=l.filter(u=> this.statusFilter==='active'?u.active:!u.active);
+                    if(this.search){ const q=this.search.toLowerCase(); l=l.filter(u=>(u.name&&u.name.toLowerCase().includes(q))||(u.email&&u.email.toLowerCase().includes(q))); }
+                    return l;
                 },
                 pagedUsers(){ const s=(this.currentPage-1)*this.pageSize; return this.filteredUsers.slice(s,s+this.pageSize); }
             },
             mounted(){
                 if(window.FacilioAppSDK){
-                    window.facilioApp = FacilioAppSDK.init();
-                    window.facilioApp.on("app.loaded", ()=>{
-                        try { this.currentUser = window.facilioApp.getCurrentUser(); } catch(e){}
-                        this.loadStats();
-                    });
-                    setTimeout(()=>{ if(!this.loaded && !this.loading) this.loadStats(); }, 2000);
-                } else {
-                    this.loadError = 'Facilio SDK not available.';
-                }
+                    window.facilioApp=FacilioAppSDK.init();
+                    window.facilioApp.on("app.loaded",()=>{ this.loadStats(); });
+                    setTimeout(()=>{ if(!this.loaded&&!this.loading) this.loadStats(); },2000);
+                } else { this.loadError='Facilio SDK not available.'; }
             },
-            methods: {
+            methods:{
                 async loadStats(){
                     this.loading=true; this.loadError=null;
                     try{
-                        const { responseCode, result } = await window.facilioApp.request.invokeFacilioAPI('/v2/workflow/runWorkflow', {
+                        const { result } = await window.facilioApp.request.invokeFacilioAPI('/v2/workflow/runWorkflow',{
                             method:'POST',
                             data:{ workflow:{ isV2Script:true, workflowV2String: LICENSE_STATS_SCRIPT }, paramList:[{}] }
                         });
-                        window.facilioApp.log && window.facilioApp.log.info && window.facilioApp.log.info('license syntaxErrors: ' + JSON.stringify(result && result.workflowSyntaxError));
                         const data = result && result.workflow ? result.workflow.returnValue : null;
                         if(!data){ throw new Error('No data returned from workflow.'); }
                         this.stats=data; this.users=data.users||[]; this.loaded=true;
                         this.lastUpdated=new Date().toLocaleTimeString();
-                    }catch(err){
-                        console.error(err);
-                        this.loadError='Could not load license data. '+(err && err.message ? err.message : '');
-                    }finally{ this.loading=false; }
+                    }catch(err){ console.error(err); this.loadError='Could not load license data. '+(err&&err.message?err.message:''); }
+                    finally{ this.loading=false; }
                 },
                 exportPDF(){
                     const el=document.getElementById('capture');
-                    if(!el||!window.html2pdf){ return; }
-                    const opt={ margin:8, filename:'cafm-license-dashboard.pdf', image:{type:'jpeg',quality:.95}, html2canvas:{scale:2,useCORS:true}, jsPDF:{unit:'mm',format:'a4',orientation:'landscape'} };
-                    window.html2pdf().set(opt).from(el).save();
+                    if(!el||!window.html2pdf) return;
+                    window.html2pdf().set({margin:8,filename:'cafm-license-dashboard.pdf',image:{type:'jpeg',quality:.95},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(el).save();
                 },
                 badgeClass(p){ return p>=100?'badge-crit':(p>=80?'badge-warn':'badge-ok'); },
                 fillClass(p){ return p>=100?'fill-crit':(p>=80?'fill-warn':'fill-ok'); },
