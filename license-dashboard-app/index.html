@@ -1,0 +1,334 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>License Utilization Dashboard</title>
+
+    <link rel="stylesheet" href="/styles/app.css">
+
+    <!-- Facilio Connected Apps SDK-->
+    <script type="text/javascript" src="https://static.facilio.com/apps-sdk/latest/facilio_apps_sdk.min.js"></script>
+
+    <!-- VueJS-->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
+
+    <!-- Element CSS / JS (same as Asset QR app) -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="//unpkg.com/element-ui/lib/umd/locale/en.js"></script>
+
+    <script type="text/javascript" src="/scripts/app.js"></script>
+</head>
+<body>
+    <div id="app" v-cloak>
+        <div class="dash-wrap">
+
+            <div class="dash-header">
+                <div>
+                    <p class="dash-title">License Utilization & User Management</p>
+                    <p class="dash-subtitle">Contract vs. added users across Maintenance, Vendor & Tenant modules</p>
+                </div>
+                <div class="dash-refresh">
+                    <span class="last-updated" v-if="lastUpdated">Last updated: {{ lastUpdated }}</span>
+                    <el-button size="small" icon="el-icon-refresh" :loading="loading" @click="loadStats">Refresh</el-button>
+                </div>
+            </div>
+
+            <div v-if="loading && !loaded" class="loading-state">Loading license data…</div>
+            <div v-else-if="loadError" class="error-state">{{ loadError }}</div>
+
+            <template v-else>
+                <!-- Contract vs Added cards -->
+                <div class="card-grid">
+                    <div class="license-card" v-for="card in cards" :key="card.key">
+                        <div class="license-card-top">
+                            <span class="license-card-label">{{ card.label }}</span>
+                            <span class="license-card-badge" :class="badgeClass(card.pct)">{{ card.pct }}% used</span>
+                        </div>
+                        <div class="license-card-numbers">
+                            <span class="license-card-added">{{ card.added }}</span>
+                            <span class="license-card-contract">/ {{ card.contract }} contracted</span>
+                        </div>
+                        <div class="license-card-bar-bg">
+                            <div class="license-card-bar-fill" :class="fillClass(card.pct)" :style="{ width: Math.min(card.pct,100) + '%' }"></div>
+                        </div>
+                        <div class="license-card-foot">
+                            <span>{{ Math.max(card.contract - card.added, 0) }} slots remaining</span>
+                            <span v-if="card.added > card.contract">Over by {{ card.added - card.contract }}</span>
+                        </div>
+                        <div class="license-card-foot" v-if="card.key === 'tenant'" style="margin-top:4px;">
+                            <span>{{ stats.tenantPortalEnabled }} with portal access</span>
+                        </div>
+                        <div class="license-card-foot" v-if="card.key === 'vendor'" style="margin-top:4px;">
+                            <span>{{ stats.vendorPortalEnabled }} with portal access</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Distribution rings -->
+                <div class="ring-grid">
+                    <div class="ring-card" v-for="card in cards" :key="'ring-' + card.key">
+                        <el-progress type="circle" :percentage="Math.min(card.pct,100)" :width="64" :color="ringColor(card.pct)"></el-progress>
+                        <div>
+                            <div class="ring-card-label">{{ card.label }} Distribution</div>
+                            <div class="ring-card-sub">{{ card.added }} active · {{ Math.max(card.contract - card.added,0) }} free</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pivot / directory table -->
+                <div class="table-card">
+                    <div class="table-card-top">
+                        <div>
+                            <div class="table-card-title">All Users</div>
+                            <div class="table-card-sub">{{ filteredUsers.length }} of {{ users.length }} users</div>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <el-select v-model="bucketFilter" size="small" placeholder="All types" clearable style="width:160px;">
+                                <el-option v-for="b in bucketOptions" :key="b" :label="b" :value="b"></el-option>
+                            </el-select>
+                            <el-input
+                                v-model="search"
+                                size="small"
+                                placeholder="Search by name or email..."
+                                prefix-icon="el-icon-search"
+                                style="width:240px;"
+                                clearable>
+                            </el-input>
+                        </div>
+                    </div>
+
+                    <el-table :data="pagedUsers" size="small" style="width:100%" v-loading="loading">
+                        <el-table-column prop="name" label="Name" min-width="200"></el-table-column>
+                        <el-table-column prop="email" label="Email" min-width="220"></el-table-column>
+                        <el-table-column label="Type" width="140">
+                            <template slot-scope="scope">
+                                <span class="license-card-badge" :class="'bucket-tag-' + scope.row.bucket.toLowerCase()">{{ scope.row.bucket }}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="peopleType" label="peopleType" width="110"></el-table-column>
+                        <el-table-column label="Portal Access" width="130">
+                            <template slot-scope="scope">
+                                <span v-if="scope.row.portalAccess === true" class="license-card-badge badge-ok">Yes</span>
+                                <span v-else-if="scope.row.portalAccess === false" class="license-card-badge badge-crit">No</span>
+                                <span v-else style="color:#c0c4cc;">—</span>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+
+                    <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+                        <el-pagination
+                            background
+                            layout="prev, pager, next"
+                            :page-size="pageSize"
+                            :current-page.sync="currentPage"
+                            :total="filteredUsers.length">
+                        </el-pagination>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // Contract limits from the MSA. Maintenance is combined (5 Named + 20 Technician)
+        // until a reliable field exists in Facilio to split them.
+        const CONTRACT_LIMITS = {
+            Admin: 1,
+            Maintenance: 25,
+            Vendor: 100,
+            Tenant: 500
+        };
+
+        // facilioScript workflow: classifies every People record into a license bucket
+        // using the same peopleType logic validated in the script console, and returns
+        // both the aggregate counts and the full row list in a single call.
+        const LICENSE_STATS_SCRIPT = `Map computeLicenseStats(Map params){
+    result = {};
+    allPeople = Module("people").fetch([id != null]);
+    tenantContacts = Module("tenantcontact").fetch([id != null]);
+    vendorContacts = Module("vendorcontact").fetch([id != null]);
+    tenantPortalMap = {};
+    for each tc in tenantContacts {
+        tenantPortalMap[tc.id] = tc.isTenantPortalAccess;
+    }
+    vendorPortalMap = {};
+    for each vc in vendorContacts {
+        vendorPortalMap[vc.id] = vc.isVendorPortalAccess;
+    }
+    admin = 0;
+    maintenance = 0;
+    vendor = 0;
+    tenant = 0;
+    tenantPortalEnabled = 0;
+    vendorPortalEnabled = 0;
+    requester = 0;
+    other = 0;
+    userList = [];
+    for each p in allPeople {
+        bucket = "Other";
+        portalAccess = null;
+        if (p.roleId == 531) {
+            bucket = "Admin";
+            admin = admin + 1;
+        }
+        else if (p.peopleType == 3) {
+            bucket = "Maintenance";
+            maintenance = maintenance + 1;
+        }
+        else if (p.peopleType == 2) {
+            bucket = "Vendor";
+            vendor = vendor + 1;
+            if (vendorPortalMap[p.id] != null) {
+                portalAccess = vendorPortalMap[p.id];
+                if (portalAccess == true) {
+                    vendorPortalEnabled = vendorPortalEnabled + 1;
+                }
+            }
+        }
+        else if (p.peopleType == 1) {
+            bucket = "Tenant";
+            tenant = tenant + 1;
+            if (tenantPortalMap[p.id] != null) {
+                portalAccess = tenantPortalMap[p.id];
+                if (portalAccess == true) {
+                    tenantPortalEnabled = tenantPortalEnabled + 1;
+                }
+            }
+        }
+        else if (p.peopleType == 7) {
+            bucket = "Requester";
+            requester = requester + 1;
+        }
+        else {
+            other = other + 1;
+        }
+        row = {};
+        row.name = p.name;
+        row.email = p.email;
+        row.peopleType = p.peopleType;
+        row.bucket = bucket;
+        row.portalAccess = portalAccess;
+        userList.add(row);
+    }
+    result.admin = admin;
+    result.maintenance = maintenance;
+    result.vendor = vendor;
+    result.tenant = tenant;
+    result.tenantPortalEnabled = tenantPortalEnabled;
+    result.vendorPortalEnabled = vendorPortalEnabled;
+    result.requester = requester;
+    result.other = other;
+    result.users = userList;
+    return result;
+}`;
+
+        var app = new Vue({
+            el: '#app',
+            data: {
+                loading: false,
+                loaded: false,
+                loadError: null,
+                lastUpdated: null,
+                stats: null,
+                users: [],
+                search: '',
+                bucketFilter: '',
+                currentPage: 1,
+                pageSize: 10,
+                currentUser: null,
+            },
+            computed: {
+                cards() {
+                    if (!this.stats) return [];
+                    const defs = [
+                        { key: 'admin', label: 'Admin Users', added: this.stats.admin, contract: CONTRACT_LIMITS.Admin },
+                        { key: 'maintenance', label: 'Maintenance Users', added: this.stats.maintenance, contract: CONTRACT_LIMITS.Maintenance },
+                        { key: 'vendor', label: 'Vendor Users', added: this.stats.vendor, contract: CONTRACT_LIMITS.Vendor },
+                        { key: 'tenant', label: 'Tenant Users', added: this.stats.tenant, contract: CONTRACT_LIMITS.Tenant },
+                    ];
+                    return defs.map(d => ({ ...d, pct: d.contract ? Math.round((d.added / d.contract) * 100) : 0 }));
+                },
+                bucketOptions() {
+                    const set = new Set(this.users.map(u => u.bucket));
+                    return Array.from(set);
+                },
+                filteredUsers() {
+                    let list = this.users;
+                    if (this.bucketFilter) {
+                        list = list.filter(u => u.bucket === this.bucketFilter);
+                    }
+                    if (this.search) {
+                        const q = this.search.toLowerCase();
+                        list = list.filter(u =>
+                            (u.name && u.name.toLowerCase().includes(q)) ||
+                            (u.email && u.email.toLowerCase().includes(q))
+                        );
+                    }
+                    return list;
+                },
+                pagedUsers() {
+                    const start = (this.currentPage - 1) * this.pageSize;
+                    return this.filteredUsers.slice(start, start + this.pageSize);
+                }
+            },
+            mounted() {
+                window.facilioApp = FacilioAppSDK.init();
+                window.facilioApp.on("app.loaded", (data) => {
+                    this.currentUser = window.facilioApp.getCurrentUser();
+                    this.loadStats();
+                });
+            },
+            methods: {
+                async loadStats() {
+                    this.loading = true;
+                    this.loadError = null;
+                    try {
+                        const { responseCode, result } = await window.facilioApp.request.invokeFacilioAPI('/v2/workflow/runWorkflow', {
+                            method: 'POST',
+                            data: {
+                                workflow: {
+                                    isV2Script: true,
+                                    workflowV2String: LICENSE_STATS_SCRIPT
+                                },
+                                paramList: [{}]
+                            }
+                        });
+                        const data = result && result.workflow ? result.workflow.returnValue : null;
+                        if (!data) {
+                            throw new Error('No data returned from workflow.');
+                        }
+                        this.stats = data;
+                        this.users = data.users || [];
+                        this.loaded = true;
+                        this.lastUpdated = new Date().toLocaleTimeString();
+                    } catch (err) {
+                        console.error(err);
+                        this.loadError = 'Could not load license data. Check that the workflow script has permission to read the People module.';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                badgeClass(pct) {
+                    if (pct >= 100) return 'badge-crit';
+                    if (pct >= 80) return 'badge-warn';
+                    return 'badge-ok';
+                },
+                fillClass(pct) {
+                    if (pct >= 100) return 'fill-crit';
+                    if (pct >= 80) return 'fill-warn';
+                    return 'fill-ok';
+                },
+                ringColor(pct) {
+                    if (pct >= 100) return '#ef4444';
+                    if (pct >= 80) return '#f59e0b';
+                    return '#10b981';
+                }
+            },
+            watch: {
+                search() { this.currentPage = 1; },
+                bucketFilter() { this.currentPage = 1; }
+            }
+        })
+    </script>
+</body>
+</html>
