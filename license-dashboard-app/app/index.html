@@ -10,228 +10,288 @@
 <script src="https://unpkg.com/element-ui/lib/index.js"></script>
 <script src="//unpkg.com/element-ui/lib/umd/locale/en.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <style>
-:root{--primary:#1666c4;--primary-d:#0f4c96;--ink:#141b26;--muted:#64707f;--line:#e6ebf2;--bg:#eef2f8;--card:#fff;--ok:#12b76a;--ok-d:#039855;--warn:#f79009;--crit:#f04438;--ok-s:#e7f7ee;--warn-s:#fef3e2;--crit-s:#fdeceb;--pri-s:#e8f1fc;--violet:#7a5af8;--teal:#15b8a6;}
+:root{--primary:#5a3ec8;--primary2:#7a5af8;--ink:#101828;--muted:#667085;--line:#e4e7ec;--bg:#f4f5f8;--card:#fff;--ok:#12b76a;--ok-d:#039855;--warn:#f79009;--crit:#f04438;--ok-s:#e7f7ee;--warn-s:#fef3e2;--crit-s:#fdeceb;--pri-s:#efeafe;--head:#f9fafb;}
 *{box-sizing:border-box;}
 html,body{margin:0;height:100%;}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px;}
-.wrap{width:100%;max-width:1860px;margin:0 auto;padding:24px 30px 40px;}
-.head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
-.brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:800;color:var(--primary);letter-spacing:.2px;}
-.brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--primary),var(--violet));display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;}
-.updated{color:var(--muted);font-size:12.5px;display:flex;align-items:center;gap:6px;}
-.title-row{margin:18px 0 4px;}
-.h1{font-size:27px;font-weight:800;letter-spacing:-.02em;}
-.sub{color:var(--muted);font-size:13.5px;margin-top:3px;}
-.filters{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-top:20px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;box-shadow:0 1px 2px rgba(16,24,40,.04);}
+.wrap{width:100%;max-width:1880px;margin:0 auto;padding:22px 30px 46px;}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 22px;box-shadow:0 1px 3px rgba(16,24,40,.05);}
+.org{display:flex;gap:14px;align-items:flex-start;}
+.org-logo{height:46px;width:auto;max-width:150px;object-fit:contain;}
+.org-logo-fallback{height:46px;min-width:46px;padding:0 12px;border-radius:10px;background:linear-gradient(135deg,#0a2540,#12385e);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;letter-spacing:1px;}
+.org-info{font-size:11.5px;color:var(--muted);line-height:1.5;}
+.org-info .nm{font-size:14px;font-weight:800;color:var(--ink);}
+.title-block{text-align:right;}
+.title-block .mgr{font-size:12px;font-weight:800;color:var(--primary);letter-spacing:.3px;}
+.title-block .h1{font-size:22px;font-weight:800;letter-spacing:-.01em;margin-top:2px;}
+.title-block .sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.title-block .upd{font-size:11px;color:var(--muted);margin-top:4px;}
+.filters{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 20px;margin-top:18px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;box-shadow:0 1px 3px rgba(16,24,40,.05);}
 .fitem{display:flex;flex-direction:column;gap:6px;}
-.flabel{font-size:12px;color:var(--muted);font-weight:600;}
-.spacer{flex:1;}
-.grid{display:grid;gap:18px;margin-top:20px;}
+.flabel{font-size:12px;color:var(--muted);font-weight:700;}
+.pdf-filters{display:none;font-size:12px;color:var(--muted);margin:6px 2px 0;}
+.grid{display:grid;gap:16px;margin-top:18px;}
 .grid6{grid-template-columns:repeat(6,1fr);}
 .grid4{grid-template-columns:repeat(4,1fr);}
 @media(max-width:1400px){.grid6{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:1100px){.grid4{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:760px){.grid6{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:480px){.grid6,.grid4{grid-template-columns:1fr;}}
-.kpi{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;min-height:168px;display:flex;flex-direction:column;gap:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;}
-.kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--accent,var(--primary));opacity:.9;}
+.kpi{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;min-height:176px;display:flex;flex-direction:column;gap:11px;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,.05);transition:transform .16s,box-shadow .16s,border-color .16s;}
+.kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:var(--accent,var(--primary));}
 .kpi.clickable{cursor:pointer;}
-.kpi.clickable:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(16,24,40,.12);border-color:#cddcf0;}
-.kpi.sel{border-color:var(--primary);box-shadow:0 0 0 3px var(--pri-s),0 8px 20px rgba(22,102,196,.14);}
-.kpi-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
-.kpi-ic{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--accent-s,var(--pri-s));color:var(--accent,var(--primary));}
-.badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;letter-spacing:.2px;}
+.kpi.clickable:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(16,24,40,.13);border-color:#d4c9f7;}
+.kpi.sel{border-color:var(--primary);box-shadow:0 0 0 3px var(--pri-s);}
+.kpi-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.kpi-ic{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--accent-s,var(--pri-s));}
+.badge{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;white-space:nowrap;}
 .badge-ok{color:var(--ok-d);background:var(--ok-s);}
 .badge-warn{color:#b54708;background:var(--warn-s);}
 .badge-crit{color:#b42318;background:var(--crit-s);}
 .badge-info{color:var(--primary);background:var(--pri-s);}
 .kpi-name{font-size:13px;font-weight:700;color:var(--muted);}
-.kpi-count{font-size:34px;font-weight:800;line-height:1;letter-spacing:-.02em;}
-.kpi-count small{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:0;}
-.track{height:8px;border-radius:999px;background:#eef1f6;overflow:hidden;}
+.kpi-count{font-size:32px;font-weight:800;line-height:1;letter-spacing:-.02em;}
+.kpi-count small{font-size:13px;font-weight:600;color:var(--muted);}
+.track{height:8px;border-radius:999px;background:#eef0f4;overflow:hidden;}
 .track>span{display:block;height:100%;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1);}
-.f-ok{background:linear-gradient(90deg,var(--primary),#3d82d6);}
+.f-ok{background:linear-gradient(90deg,var(--primary),var(--primary2));}
 .f-warn{background:linear-gradient(90deg,var(--warn),#fbbf5b);}
 .f-crit{background:linear-gradient(90deg,var(--crit),#f97066);}
-.kpi-foot{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:auto;}
-.kpi-foot .exceeded{color:var(--crit);font-weight:700;}
-.kpi-foot .active{color:var(--ok-d);font-weight:700;}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);}
+.kpi-stats{display:flex;gap:8px;margin-top:auto;}
+.kpi-stat{flex:1;background:var(--head);border-radius:9px;padding:7px 9px;}
+.kpi-stat .n{font-size:16px;font-weight:800;line-height:1;}
+.kpi-stat .l{font-size:10px;color:var(--muted);font-weight:600;margin-top:3px;text-transform:uppercase;letter-spacing:.3px;}
+.kpi-foot{font-size:11.5px;font-weight:700;}
+.kpi-foot.exceeded{color:var(--crit);}
+.kpi-foot.okleft{color:var(--ok-d);}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:18px;box-shadow:0 1px 3px rgba(16,24,40,.05);}
+.gauge-card{display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .16s,box-shadow .16s;}
+.gauge-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(16,24,40,.1);}
+.gauge-title{font-size:13px;font-weight:700;color:var(--muted);align-self:flex-start;}
+.gauge-wrap{position:relative;width:158px;height:158px;margin:2px auto;}
+.gauge-wrap svg{transform:rotate(-90deg);}
+.gauge-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.gauge-pct{font-size:27px;font-weight:800;line-height:1;}
+.gauge-pl{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-top:2px;}
+.gauge-nums{font-size:12px;color:var(--muted);font-weight:600;}
+.gauge-over{font-size:11px;font-weight:800;color:var(--crit);background:var(--crit-s);padding:2px 9px;border-radius:999px;}
+.gauge-under{font-size:11px;font-weight:800;color:var(--ok-d);background:var(--ok-s);padding:2px 9px;border-radius:999px;}
+.p-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
 .panel-title{font-size:17px;font-weight:800;}
 .panel-sub{font-size:12.5px;color:var(--muted);margin-top:3px;}
-.ring-card{display:flex;flex-direction:column;align-items:center;gap:8px;}
-.ring-title{font-size:13px;font-weight:700;color:var(--muted);align-self:flex-start;}
-.ring-wrap{position:relative;width:150px;height:150px;margin:4px auto 2px;}
-.ring-wrap svg{transform:rotate(-90deg);}
-.ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
-.ring-used{font-size:26px;font-weight:800;line-height:1;}
-.ring-used-l{font-size:10.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
-.ring-split{display:flex;gap:18px;font-size:12px;}
-.ring-over{font-size:14px;font-weight:700;color:var(--crit);line-height:1.2;}
-.ring-over small{font-size:11px;font-weight:600;color:var(--muted);display:block;}
-.ring-split b{font-weight:800;}
-.ring-split .used{color:var(--primary);}
-.ring-split .rem{color:var(--muted);}
-.tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;background:var(--pri-s);color:var(--primary);}
-.tag.t-Admin{background:#efe9ff;color:#6941c6;}
-.tag.t-Maintenance{background:var(--pri-s);color:var(--primary);}
-.tag.t-Vendor{background:var(--warn-s);color:#b54708;}
-.tag.t-Tenant{background:var(--ok-s);color:var(--ok-d);}
+/* structured table */
+.utbl{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px;}
+.utbl thead th{background:var(--primary);color:#fff;text-align:left;font-weight:700;font-size:12.5px;padding:11px 14px;border-right:1px solid rgba(255,255,255,.15);white-space:nowrap;}
+.utbl thead th:last-child{border-right:none;}
+.utbl tbody td{padding:10px 14px;border-right:1px solid var(--line);border-top:1px solid var(--line);color:#344054;}
+.utbl tbody td:last-child{border-right:none;}
+.utbl tbody tr:nth-child(odd){background:#fff;}
+.utbl tbody tr:nth-child(even){background:#f7f8fb;}
+.utbl tbody tr{transition:background .12s;}
+.utbl tbody tr:hover{background:#eef4ff;}
+.tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;display:inline-block;}
+.t-Admin{background:#efe9ff;color:#6941c6;}
+.t-Maintenance{background:#eaf1fd;color:#1666c4;}
+.t-Vendor{background:var(--warn-s);color:#b54708;}
+.t-Tenant{background:var(--ok-s);color:var(--ok-d);}
+.t-Requester,.t-Other{background:#eef1f5;color:#475569;}
 .rolechip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:7px;background:#eef2f7;color:#475569;}
-.dot{display:inline-block;width:8px;height:8px;border-radius:999px;margin-right:6px;vertical-align:middle;}
-.dot.g{background:var(--ok);}.dot.x{background:#c2c8d2;}
-.stcell{font-weight:600;}.stcell.on{color:var(--ok-d);}.stcell.off{color:var(--muted);}
-.el-table td,.el-table th{transition:background .12s ease;}
-.el-table.bordered th,.el-table.bordered td{border:1px solid var(--line);}
-.el-table.bordered th{background:#f8fafc;}
-.el-button{transition:transform .12s ease,box-shadow .12s ease;}
+.stpill{font-weight:700;display:inline-flex;align-items:center;gap:6px;}
+.stpill .dot{width:8px;height:8px;border-radius:999px;display:inline-block;}
+.st-on{color:var(--ok-d);}.st-on .dot{background:var(--ok);}
+.st-off{color:var(--muted);}.st-off .dot{background:#c2c8d2;}
+.pager{display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:8px;}
+.pgbtns button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;transition:all .12s;margin-left:6px;}
+.pgbtns button:hover:not(:disabled){border-color:var(--primary);color:var(--primary);}
+.pgbtns button:disabled{opacity:.45;cursor:not-allowed;}
+.pdf-footer{display:none;}
+.el-button{transition:transform .12s,box-shadow .12s;}
 .el-button:hover{transform:translateY(-1px);}
-.footer{margin-top:30px;padding-top:20px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--muted);}
-.footer img{height:18px;opacity:.8;}
-.loading,.errbox,.empty{text-align:center;color:var(--muted);padding:60px 20px;}
+.loading,.errbox,.empty{text-align:center;color:var(--muted);padding:56px 20px;}
 .errbox{color:var(--crit);}
-.empty-ic{font-size:42px;margin-bottom:10px;opacity:.5;}
+.empty-ic{font-size:40px;margin-bottom:10px;opacity:.5;}
 .skel{background:linear-gradient(90deg,#e9eef5 25%,#f4f7fb 37%,#e9eef5 63%);background-size:400% 100%;animation:sh 1.3s ease infinite;border-radius:16px;}
 @keyframes sh{0%{background-position:100% 50%}100%{background-position:0 50%}}
-.skel-kpi{height:168px;}
+.skel-kpi{height:176px;}
+/* print */
+@media print{
+ .filters,.no-print{display:none!important;}
+ .pdf-filters,.pdf-footer{display:block!important;}
+ .utbl tbody tr{page-break-inside:avoid;}
+ .panel,.kpi,.gauge-card{page-break-inside:avoid;}
+}
 </style>
 </head>
 <body>
 <div id="app" class="wrap">
-    <div class="head">
-        <div class="brand"><span class="logo">◈</span> CAFM License Manager</div>
-        <div class="updated" v-if="lastUpdated">🕒 Last update: {{ lastUpdated }}</div>
-    </div>
-    <div class="title-row">
-        <div class="h1">License Utilization &amp; User Management</div>
-        <div class="sub">Contract license monitoring · portal usage · verification status</div>
-    </div>
-
-    <div class="filters">
-        <div class="fitem" style="min-width:180px;"><span class="flabel">Type</span>
-            <el-select v-model="bucketFilter" placeholder="All types" clearable size="small">
-                <el-option v-for="b in bucketOptions" :key="b" :label="b" :value="b"></el-option>
-            </el-select>
-        </div>
-        <div class="fitem" style="min-width:160px;"><span class="flabel">Status</span>
-            <el-select v-model="statusFilter" placeholder="Any status" clearable size="small">
-                <el-option label="Invite Accepted" value="active"></el-option>
-                <el-option label="Pending" value="inactive"></el-option>
-            </el-select>
-        </div>
-        <div class="fitem" style="flex:1;min-width:260px;"><span class="flabel">Search</span>
-            <el-input v-model="search" placeholder="Search by name, email, type or role" size="small" clearable prefix-icon="el-icon-search"></el-input>
-        </div>
-        <el-button size="small" icon="el-icon-close" @click="clearFilters" :disabled="!hasFilters">Clear Filters</el-button>
-        <el-button type="primary" size="small" icon="el-icon-refresh" :loading="loading" @click="loadStats">Refresh</el-button>
-        <el-button size="small" icon="el-icon-download" @click="exportPDF">Export PDF</el-button>
-    </div>
-
-    <div v-if="loading" class="grid grid6"><div class="skel skel-kpi" v-for="n in 6" :key="n"></div></div>
-    <div v-else-if="loadError" class="errbox">⚠ {{ loadError }}</div>
-
-    <template v-else-if="loaded">
     <div id="capture">
+        <div class="topbar">
+            <div class="org">
+                <img class="org-logo" src="/Osus%20pc.png" alt="Osus" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                <div class="org-logo-fallback" style="display:none;">OSUS</div>
+                <div class="org-info">
+                    <div class="nm">Osus</div>
+                    <div>Contact: +971 55 775 6776</div>
+                    <div>6975 King Abdul Aziz Branch Road</div>
+                    <div>Riyadh, Riyadh Province 13322</div>
+                    <div>SA</div>
+                </div>
+            </div>
+            <div class="title-block">
+                <div class="mgr">CAFM LICENSE MANAGER</div>
+                <div class="h1">License Utilization &amp; User Management</div>
+                <div class="sub">Contract license monitoring · portal usage · verification status</div>
+                <div class="upd" v-if="lastUpdated">Last update: {{ lastUpdated }}</div>
+            </div>
+        </div>
+
+        <div class="filters no-print">
+            <div class="fitem" style="min-width:180px;"><span class="flabel">Type</span>
+                <el-select v-model="bucketFilter" placeholder="All types" clearable size="small">
+                    <el-option v-for="b in bucketOptions" :key="b" :label="b" :value="b"></el-option>
+                </el-select></div>
+            <div class="fitem" style="min-width:170px;"><span class="flabel">Invite Status</span>
+                <el-select v-model="statusFilter" placeholder="Any" clearable size="small">
+                    <el-option label="Accepted" value="active"></el-option>
+                    <el-option label="Pending" value="inactive"></el-option>
+                </el-select></div>
+            <div class="fitem" style="flex:1;min-width:240px;"><span class="flabel">Search</span>
+                <el-input v-model="search" placeholder="Search by name, email, phone, type or role" size="small" clearable prefix-icon="el-icon-search"></el-input></div>
+            <el-button size="small" icon="el-icon-close" @click="clearFilters" :disabled="!hasFilters">Clear Filters</el-button>
+            <el-button type="primary" size="small" icon="el-icon-refresh" :loading="loading" @click="loadStats">Refresh</el-button>
+            <el-button size="small" icon="el-icon-download" @click="exportPDF">Export PDF</el-button>
+        </div>
+
+        <div class="pdf-filters" v-if="loaded">Applied filters — Type: {{ bucketFilter||'All' }} · Invite: {{ statusFilter==='active'?'Accepted':(statusFilter==='inactive'?'Pending':'Any') }} · Search: {{ search||'—' }}</div>
+
+        <div v-if="loading" class="grid grid6"><div class="skel skel-kpi" v-for="n in 6" :key="n"></div></div>
+        <div v-else-if="loadError" class="errbox">⚠ {{ loadError }}</div>
+
+        <template v-else-if="loaded">
         <div class="grid grid6">
-            <div class="kpi" v-for="c in cards" :key="c.key" :class="{clickable:c.bucket, sel: c.bucket && bucketFilter===c.bucket}" :style="{'--accent':c.color,'--accent-s':c.colorS}" @click="c.bucket ? toggleBucket(c.bucket) : null">
+            <div class="kpi" v-for="c in cards" :key="c.key" :class="{clickable:c.bucket, sel:c.bucket&&bucketFilter===c.bucket}" :style="{'--accent':c.color,'--accent-s':c.colorS}" @click="c.bucket?toggleBucket(c.bucket):null">
                 <div class="kpi-top">
                     <div class="kpi-ic">{{ c.icon }}</div>
-                    <div class="badge" :class="c.info ? 'badge-info' : badgeClass(c.pct)">{{ c.info ? 'reference' : c.pct + '% used' }}</div>
+                    <div class="badge" :class="c.info?'badge-info':badgeClass(c.pct)">{{ c.info?'reference':c.pct+'% used' }}</div>
                 </div>
                 <div class="kpi-name">{{ c.label }}</div>
                 <div class="kpi-count">{{ c.added }}<small v-if="!c.info"> / {{ c.contract }}</small><small v-else> total</small></div>
                 <div v-if="!c.info" class="track"><span :class="fillClass(c.pct)" :style="{width:Math.min(100,c.pct)+'%'}"></span></div>
-                <div class="kpi-foot">
-                    <span v-if="c.invite!=null">Accepted: <b>{{ c.invite }}</b></span>
-                    <span v-else>&nbsp;</span>
-                    <span v-if="!c.info" :class="{exceeded:(c.contract-c.added)<=0}">{{ (c.contract-c.added)>0 ? (c.contract-c.added)+' available' : 'License Limit Exceeded' }}</span>
+                <div class="kpi-stats" v-if="!c.info">
+                    <div class="kpi-stat"><div class="n">{{ c.added }}</div><div class="l">Added</div></div>
+                    <div class="kpi-stat"><div class="n">{{ c.portal }}</div><div class="l">Portal access</div></div>
                 </div>
+                <div class="kpi-foot" :class="(c.contract-c.added)<=0?'exceeded':'okleft'" v-if="!c.info">
+                    {{ (c.contract-c.added)>0 ? (c.contract-c.added)+' licenses available' : 'License Limit Exceeded (over by '+(c.added-c.contract)+')' }}
+                </div>
+                <div class="kpi-stats" v-else><div class="kpi-stat"><div class="n">{{ c.added }}</div><div class="l">Records</div></div></div>
             </div>
         </div>
 
         <div class="grid grid4">
-            <div class="panel ring-card" v-for="r in rings" :key="r.key">
-                <div class="ring-title">{{ r.title }}</div>
-                <div class="ring-wrap">
-                    <svg width="150" height="150" viewBox="0 0 150 150">
-                        <circle cx="75" cy="75" r="62" fill="none" stroke="#eef1f6" stroke-width="14"></circle>
-                        <circle cx="75" cy="75" r="62" fill="none" :stroke="r.color" stroke-width="14" stroke-linecap="round" :stroke-dasharray="circ" :stroke-dashoffset="circ-(circ*Math.min(100,r.pct)/100)" style="transition:stroke-dashoffset .7s cubic-bezier(.4,0,.2,1);"></circle>
+            <div class="panel gauge-card" v-for="g in gauges" :key="g.key">
+                <div class="gauge-title">{{ g.title }}</div>
+                <div class="gauge-wrap">
+                    <svg width="158" height="158" viewBox="0 0 158 158">
+                        <circle cx="79" cy="79" r="66" fill="none" stroke="#eef0f4" stroke-width="14"></circle>
+                        <circle cx="79" cy="79" r="66" fill="none" :stroke="g.over?'#f04438':g.color" stroke-width="14" stroke-linecap="round" :stroke-dasharray="circ" :stroke-dashoffset="circ-(circ*g.capped/100)" style="transition:stroke-dashoffset .7s cubic-bezier(.4,0,.2,1);"></circle>
                     </svg>
-                    <div class="ring-center">
-                        <template v-if="r.pct <= 100">
-                            <div class="ring-used" :style="{color:r.color}">{{ r.pct }}%</div>
-                            <div class="ring-used-l">used</div>
-                        </template>
-                        <template v-else>
-                            <div class="ring-over">Over by {{ r.added - r.contract }}<small>users</small></div>
-                        </template>
+                    <div class="gauge-center">
+                        <div class="gauge-pct" :style="{color:g.over?'#f04438':g.color}">{{ g.pct }}%</div>
+                        <div class="gauge-pl">of license</div>
                     </div>
                 </div>
-                <div class="ring-split"><span class="used">Used <b>{{ r.added }}</b></span><span class="rem">Available <b>{{ Math.max(0, r.contract - r.added) }}</b></span></div>
+                <div class="gauge-nums">{{ g.added }} of {{ g.contract }} licensed</div>
+                <div v-if="g.over" class="gauge-over">Over by {{ g.added-g.contract }}</div>
+                <div v-else class="gauge-under">{{ g.contract-g.added }} available</div>
             </div>
         </div>
 
         <div class="panel">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+            <div class="p-head">
                 <div><div class="panel-title">User Directory</div><div class="panel-sub">{{ filteredUsers.length }} of {{ users.length }} users{{ activeFilterLabel }}</div></div>
             </div>
             <div v-if="!filteredUsers.length" class="empty"><div class="empty-ic">🔍</div><div>No users match your filters.</div><el-button type="text" @click="clearFilters">Clear filters</el-button></div>
             <template v-else>
-            <el-table :data="pagedUsers" style="width:100%" size="medium" stripe :default-sort="{prop:'bucket',order:'ascending'}" class="bordered">
-                <el-table-column prop="name" label="User" sortable min-width="200"></el-table-column>
-                <el-table-column prop="email" label="Email" min-width="260"></el-table-column>
-                <el-table-column prop="bucket" label="Type" sortable width="150"><template slot-scope="s"><span class="tag" :class="'t-'+s.row.bucket">{{ s.row.bucket }}</span></template></el-table-column>
-                <el-table-column prop="role" label="Role" width="190"><template slot-scope="s"><span v-if="s.row.role" class="rolechip">{{ s.row.role }}</span><span v-else style="color:#c2c8d2;">—</span></template></el-table-column>
-                <el-table-column label="Invite Status" width="160" sortable prop="invite"><template slot-scope="s"><span class="stcell" :class="s.row.invite?'on':'off'"><span class="dot" :class="s.row.invite?'g':'x'"></span>{{ s.row.invite?'Accepted':'Pending' }}</span></template></el-table-column>
-            </el-table>
-            <div style="display:flex;justify-content:flex-end;margin-top:14px;"><el-pagination layout="prev, pager, next" :total="filteredUsers.length" :page-size="pageSize" :current-page.sync="currentPage"></el-pagination></div>
+            <table class="utbl">
+                <thead><tr>
+                    <th style="width:20%;">User</th><th style="width:26%;">Email</th><th style="width:15%;">Mobile Number</th><th style="width:11%;">Type</th><th style="width:16%;">Role</th><th style="width:12%;">Invite Status</th>
+                </tr></thead>
+                <tbody>
+                    <tr v-for="(u,i) in pagedUsers" :key="i">
+                        <td style="font-weight:600;color:#101828;">{{ u.name || '—' }}</td>
+                        <td>{{ u.email || '—' }}</td>
+                        <td>{{ u.phone || '—' }}</td>
+                        <td><span class="tag" :class="'t-'+u.bucket">{{ u.bucket }}</span></td>
+                        <td><span v-if="u.role" class="rolechip">{{ u.role }}</span><span v-else style="color:#c2c8d2;">—</span></td>
+                        <td><span class="stpill" :class="u.invite?'st-on':'st-off'"><span class="dot"></span>{{ u.invite?'Accepted':'Pending' }}</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="pager no-print">
+                <span style="font-size:12.5px;color:var(--muted);">Page {{ currentPage }} of {{ totalPages }}</span>
+                <div class="pgbtns">
+                    <button :disabled="currentPage<=1" @click="currentPage--">Previous</button>
+                    <button :disabled="currentPage>=totalPages" @click="currentPage++">Next</button>
+                </div>
+            </div>
             </template>
         </div>
-        <div class="footer">
-            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAAyCAYAAAD2+Gk5AAAFyElEQVR4nO2d64tVVRjGv/fccx/jTDMzU8/UjLGU8kMpy4wMvygyyqAgiqAPgqAPgugf0AdB9EGQoZflHykzyygy8kMpy4zMNDPzccw99/a595x9dud1Z5+9z9ln7z17n73P2Y/tN2vN2mvf61vrW2udvV8A4I/h/wMA/F0gQoAIEQKEyBAhQIQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEiBAhQoQIESJEi-logo.png" alt="Facilio"> Powered by Facilio
+
+        <div class="pdf-footer">
+            <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;color:#667085;font-size:12px;border-top:1px solid var(--line);margin-top:18px;">
+                <span>Powered by</span>
+                <img src="/images.png" alt="Facilio" style="height:20px;width:auto;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+                <b style="display:none;color:#5a3ec8;">Facilio</b>
+            </div>
         </div>
+        </template>
     </div>
-    </template>
+    <div class="no-print" style="text-align:center;padding:18px;color:#98a2b3;font-size:12px;display:flex;align-items:center;justify-content:center;gap:7px;">
+        <span>Powered by</span>
+        <img src="/images.png" alt="Facilio" style="height:18px;width:auto;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+        <b style="display:none;color:#5a3ec8;">Facilio</b>
+    </div>
+</div>
 
 <script type="text/javascript">
 ELEMENT.locale(ELEMENT.lang.en);
 const CONTRACT_LIMITS={Admin:1,Maintenance:25,Vendor:100,Tenant:500};
-const LICENSE_STATS_SCRIPT="Map computeLicenseStats() {\r\n    result = {};\r\n    roleNameMap = {};\r\n    roleNameMap.put(\"531\", \"CAFM Super Administrator\");\r\n    roleNameMap.put(\"532\", \"CAFM Administrator\");\r\n    roleNameMap.put(\"614\", \"Cafm Operator\");\r\n    roleNameMap.put(\"615\", \"Technician\");\r\n    roleNameMap.put(\"616\", \"Store Keeper\");\r\n    roleNameMap.put(\"617\", \"Supervisor\");\r\n    roleNameMap.put(\"715\", \"IT Administrator\");\r\n    personRoleMap = {};\r\n    adminRoleIds = [531, 532];\r\n    adminPeople = Module(\"people\").getPeopleForRoles(adminRoleIds);\r\n    if (adminPeople != null) {\r\n        for each ai, ap in adminPeople {\r\n            personRoleMap.put(ap.id + \"\", \"Admin\");\r\n        }\r\n    }\r\n    maintRoleIds = [614, 615, 616, 617, 715];\r\n    maintRolePeople = Module(\"people\").getPeopleForRoles(maintRoleIds);\r\n    roleLabelMap = {};\r\n    if (maintRolePeople != null) {\r\n        for each mi, mp in maintRolePeople {\r\n            rid = mp.roleId + \"\";\r\n            rn = roleNameMap.get(rid);\r\n            if (rn == null) {\r\n                rn = \"Maintenance\";\r\n            }\r\n            personRoleMap.put(mp.id + \"\", \"Maintenance\");\r\n            roleLabelMap.put(mp.id + \"\", rn);\r\n        }\r\n    }\r\n    inviteMap = {};\r\n    userActiveMap = {};\r\n    verifiedMap = {};\r\n    userFetch = {};\r\n    userFetch.put(\"criteria\", [peopleId > 0]);\r\n    userFetch.put(\"limit\", 50);\r\n    allUsers = Module(\"users\").fetch(userFetch);\r\n    userLoginCount = 0;\r\n    if (allUsers != null) {\r\n        userLoginCount = allUsers.size();\r\n        for each ui, u in allUsers {\r\n            if (u.peopleId != null) {\r\n                upid = u.peopleId + \"\";\r\n                if (u.inviteAcceptStatus == true) {\r\n                    inviteMap.put(upid, true);\r\n                }\r\n                if (u.userStatus == true) {\r\n                    userActiveMap.put(upid, true);\r\n                }\r\n                if (u.userVerified == true) {\r\n                    verifiedMap.put(upid, true);\r\n                }\r\n                rid2 = u.roleId + \"\";\r\n                rn2 = roleNameMap.get(rid2);\r\n                if (rn2 != null) {\r\n                    roleLabelMap.put(upid, rn2);\r\n                }\r\n            }\r\n        }\r\n    }\r\n    admin = 0;\r\n    maintenance = 0;\r\n    vendor = 0;\r\n    tenant = 0;\r\n    requester = 0;\r\n    other = 0;\r\n    inviteAccepted = 0;\r\n    verifiedCount = 0;\r\n    userList = [];\r\n    peopleFetch = {};\r\n    peopleFetch.put(\"criteria\", [id > 0]);\r\n    peopleFetch.put(\"limit\", 5000);\r\n    allPeople = Module(\"people\").fetch(peopleFetch);\r\n    if (allPeople != null) {\r\n        for each index, p in allPeople {\r\n            pid = p.id + \"\";\r\n            roleBucket = personRoleMap.get(pid);\r\n            bucket = \"Other\";\r\n            if (roleBucket == \"Admin\") {\r\n                bucket = \"Admin\";\r\n                admin = admin + 1;\r\n            } else if (p.peopleType == 3) {\r\n                bucket = \"Maintenance\";\r\n                maintenance = maintenance + 1;\r\n            } else if (p.peopleType == 2) {\r\n                bucket = \"Vendor\";\r\n                vendor = vendor + 1;\r\n            } else if (p.peopleType == 1) {\r\n                bucket = \"Tenant\";\r\n                tenant = tenant + 1;\r\n            } else if (p.peopleType == 7) {\r\n                bucket = \"Requester\";\r\n                requester = requester + 1;\r\n            } else {\r\n                other = other + 1;\r\n            }\r\n            hasInvite = false;\r\n            if (inviteMap.get(pid) != null) {\r\n                hasInvite = true;\r\n                inviteAccepted = inviteAccepted + 1;\r\n            }\r\n            isVerified = false;\r\n            if (verifiedMap.get(pid) != null) {\r\n                isVerified = true;\r\n                verifiedCount = verifiedCount + 1;\r\n            }\r\n            roleDisplay = \"\";\r\n            rl = roleLabelMap.get(pid);\r\n            if (rl != null) {\r\n                roleDisplay = rl;\r\n            }\r\n            row = {};\r\n            row.name = p.name;\r\n            row.email = p.email;\r\n            row.peopleType = p.peopleType;\r\n            row.bucket = bucket;\r\n            row.role = roleDisplay;\r\n            row.invite = hasInvite;\r\n            row.verified = isVerified;\r\n            userList.add(row);\r\n        }\r\n    }\r\n    tenantEntityCount = 0;\r\n    tf = {};\r\n    tf.put(\"criteria\", [id > 0]);\r\n    tf.put(\"limit\", 5000);\r\n    te = Module(\"tenant\").fetch(tf);\r\n    if (te != null) {\r\n        tenantEntityCount = te.size();\r\n    }\r\n    vendorEntityCount = 0;\r\n    vf = {};\r\n    vf.put(\"criteria\", [id > 0]);\r\n    vf.put(\"limit\", 5000);\r\n    ve = Module(\"vendors\").fetch(vf);\r\n    if (ve != null) {\r\n        vendorEntityCount = ve.size();\r\n    }\r\n    result.admin = admin;\r\n    result.maintenance = maintenance;\r\n    result.vendor = vendor;\r\n    result.tenant = tenant;\r\n    result.requester = requester;\r\n    result.other = other;\r\n    result.inviteAccepted = inviteAccepted;\r\n    result.verifiedCount = verifiedCount;\r\n    result.userLoginCount = userLoginCount;\r\n    result.tenantEntityCount = tenantEntityCount;\r\n    result.vendorEntityCount = vendorEntityCount;\r\n    result.users = userList;\r\n    return result;\r\n}\r\n";
+const LICENSE_STATS_SCRIPT="Map computeLicenseStats() {\r\n    result = {};\r\n    roleNameMap = {};\r\n    roleNameMap.put(\"531\", \"CAFM Super Administrator\");\r\n    roleNameMap.put(\"532\", \"CAFM Administrator\");\r\n    roleNameMap.put(\"614\", \"Cafm Operator\");\r\n    roleNameMap.put(\"615\", \"Technician\");\r\n    roleNameMap.put(\"616\", \"Store Keeper\");\r\n    roleNameMap.put(\"617\", \"Supervisor\");\r\n    roleNameMap.put(\"715\", \"IT Administrator\");\r\n    personRoleMap = {};\r\n    adminRoleIds = [531, 532];\r\n    adminPeople = Module(\"people\").getPeopleForRoles(adminRoleIds);\r\n    if (adminPeople != null) {\r\n        for each ai, ap in adminPeople {\r\n            personRoleMap.put(ap.id + \"\", \"Admin\");\r\n        }\r\n    }\r\n    maintRoleIds = [614, 615, 616, 617, 715];\r\n    maintRolePeople = Module(\"people\").getPeopleForRoles(maintRoleIds);\r\n    roleLabelMap = {};\r\n    if (maintRolePeople != null) {\r\n        for each mi, mp in maintRolePeople {\r\n            rid = mp.roleId + \"\";\r\n            rn = roleNameMap.get(rid);\r\n            if (rn == null) {\r\n                rn = \"Maintenance\";\r\n            }\r\n            personRoleMap.put(mp.id + \"\", \"Maintenance\");\r\n            roleLabelMap.put(mp.id + \"\", rn);\r\n        }\r\n    }\r\n    inviteMap = {};\r\n    userActiveMap = {};\r\n    verifiedMap = {};\r\n    userFetch = {};\r\n    userFetch.put(\"criteria\", [peopleId > 0]);\r\n    userFetch.put(\"limit\", 50);\r\n    allUsers = Module(\"users\").fetch(userFetch);\r\n    userLoginCount = 0;\r\n    if (allUsers != null) {\r\n        userLoginCount = allUsers.size();\r\n        for each ui, u in allUsers {\r\n            if (u.peopleId != null) {\r\n                upid = u.peopleId + \"\";\r\n                if (u.inviteAcceptStatus == true) {\r\n                    inviteMap.put(upid, true);\r\n                }\r\n                if (u.userStatus == true) {\r\n                    userActiveMap.put(upid, true);\r\n                }\r\n                if (u.userVerified == true) {\r\n                    verifiedMap.put(upid, true);\r\n                }\r\n                rid2 = u.roleId + \"\";\r\n                rn2 = roleNameMap.get(rid2);\r\n                if (rn2 != null) {\r\n                    roleLabelMap.put(upid, rn2);\r\n                }\r\n            }\r\n        }\r\n    }\r\n    admin = 0;\r\n    maintenance = 0;\r\n    vendor = 0;\r\n    tenant = 0;\r\n    requester = 0;\r\n    other = 0;\r\n    inviteAccepted = 0;\r\n    verifiedCount = 0;\r\n    userList = [];\r\n    peopleFetch = {};\r\n    peopleFetch.put(\"criteria\", [id > 0]);\r\n    peopleFetch.put(\"limit\", 5000);\r\n    allPeople = Module(\"people\").fetch(peopleFetch);\r\n    if (allPeople != null) {\r\n        for each index, p in allPeople {\r\n            pid = p.id + \"\";\r\n            roleBucket = personRoleMap.get(pid);\r\n            bucket = \"Other\";\r\n            if (roleBucket == \"Admin\") {\r\n                bucket = \"Admin\";\r\n                admin = admin + 1;\r\n            } else if (p.peopleType == 3) {\r\n                bucket = \"Maintenance\";\r\n                maintenance = maintenance + 1;\r\n            } else if (p.peopleType == 2) {\r\n                bucket = \"Vendor\";\r\n                vendor = vendor + 1;\r\n            } else if (p.peopleType == 1) {\r\n                bucket = \"Tenant\";\r\n                tenant = tenant + 1;\r\n            } else if (p.peopleType == 7) {\r\n                bucket = \"Requester\";\r\n                requester = requester + 1;\r\n            } else {\r\n                other = other + 1;\r\n            }\r\n            hasInvite = false;\r\n            if (inviteMap.get(pid) != null) {\r\n                hasInvite = true;\r\n                inviteAccepted = inviteAccepted + 1;\r\n            }\r\n            isVerified = false;\r\n            if (verifiedMap.get(pid) != null) {\r\n                isVerified = true;\r\n                verifiedCount = verifiedCount + 1;\r\n            }\r\n            roleDisplay = \"\";\r\n            rl = roleLabelMap.get(pid);\r\n            if (rl != null) {\r\n                roleDisplay = rl;\r\n            }\r\n            row = {};\r\n            row.name = p.name;\r\n            row.email = p.email;\r\n            row.phone = p.phone;\r\n            row.peopleType = p.peopleType;\r\n            row.bucket = bucket;\r\n            row.role = roleDisplay;\r\n            row.invite = hasInvite;\r\n            row.verified = isVerified;\r\n            userList.add(row);\r\n        }\r\n    }\r\n    tenantEntityCount = 0;\r\n    tf = {};\r\n    tf.put(\"criteria\", [id > 0]);\r\n    tf.put(\"limit\", 5000);\r\n    te = Module(\"tenant\").fetch(tf);\r\n    if (te != null) {\r\n        tenantEntityCount = te.size();\r\n    }\r\n    vendorEntityCount = 0;\r\n    vf = {};\r\n    vf.put(\"criteria\", [id > 0]);\r\n    vf.put(\"limit\", 5000);\r\n    ve = Module(\"vendors\").fetch(vf);\r\n    if (ve != null) {\r\n        vendorEntityCount = ve.size();\r\n    }\r\n    result.admin = admin;\r\n    result.maintenance = maintenance;\r\n    result.vendor = vendor;\r\n    result.tenant = tenant;\r\n    result.requester = requester;\r\n    result.other = other;\r\n    result.inviteAccepted = inviteAccepted;\r\n    result.verifiedCount = verifiedCount;\r\n    result.userLoginCount = userLoginCount;\r\n    result.tenantEntityCount = tenantEntityCount;\r\n    result.vendorEntityCount = vendorEntityCount;\r\n    result.users = userList;\r\n    return result;\r\n}\r\n";
 var app=new Vue({el:'#app',
- data:{loading:false,loaded:false,loadError:null,lastUpdated:null,stats:null,users:[],search:'',bucketFilter:'',statusFilter:'',currentPage:1,pageSize:12,circ:2*Math.PI*62},
+ data:{loading:false,loaded:false,loadError:null,lastUpdated:null,stats:null,users:[],search:'',bucketFilter:'',statusFilter:'',currentPage:1,pageSize:15,circ:2*Math.PI*66},
  computed:{
   hasFilters(){return !!(this.bucketFilter||this.statusFilter||this.search);},
   activeFilterLabel(){let p=[];if(this.bucketFilter)p.push(this.bucketFilter);if(this.statusFilter)p.push(this.statusFilter==='active'?'Accepted':'Pending');return p.length?' · '+p.join(' · '):'';},
-  cards(){if(!this.stats)return[];const s=this.stats;const inv=b=>this.users.filter(u=>u.bucket===b&&u.invite).length;
+  cards(){if(!this.stats)return[];const s=this.stats;
+   const portalIn=b=>this.users.filter(u=>u.bucket===b&&u.invite).length;
    const d=[
-    {key:'admin',label:'CAFM Admin',bucket:'Admin',added:s.admin,contract:CONTRACT_LIMITS.Admin,invite:inv('Admin'),icon:'♛',color:'#7a5af8',colorS:'#efe9ff'},
-    {key:'maint',label:'Maintenance Users',bucket:'Maintenance',added:s.maintenance,contract:CONTRACT_LIMITS.Maintenance,invite:inv('Maintenance'),icon:'🛠',color:'#1666c4',colorS:'#e8f1fc'},
-    {key:'vendor',label:'Vendor Contacts',bucket:'Vendor',added:s.vendor,contract:CONTRACT_LIMITS.Vendor,invite:inv('Vendor'),icon:'🚚',color:'#f79009',colorS:'#fef3e2'},
-    {key:'tenantc',label:'Tenant Contacts',bucket:'Tenant',added:s.tenant,contract:CONTRACT_LIMITS.Tenant,invite:inv('Tenant'),icon:'🏢',color:'#12b76a',colorS:'#e7f7ee'},
-    {key:'tenants',label:'Tenants (entities)',bucket:'',added:s.tenantEntityCount,contract:0,invite:null,info:true,icon:'🏬',color:'#15b8a6',colorS:'#e3f7f4'},
-    {key:'vendors',label:'Vendors (entities)',bucket:'',added:s.vendorEntityCount,contract:0,invite:null,info:true,icon:'📦',color:'#64707f',colorS:'#eef1f5'},
+    {key:'admin',label:'CAFM Admin',bucket:'Admin',added:s.admin,contract:CONTRACT_LIMITS.Admin,portal:portalIn('Admin'),icon:'♛',color:'#7a5af8',colorS:'#efe9ff'},
+    {key:'maint',label:'Maintenance Users',bucket:'Maintenance',added:s.maintenance,contract:CONTRACT_LIMITS.Maintenance,portal:portalIn('Maintenance'),icon:'🛠️',color:'#1666c4',colorS:'#e8f1fc'},
+    {key:'vendor',label:'Vendor Contacts',bucket:'Vendor',added:s.vendor,contract:CONTRACT_LIMITS.Vendor,portal:portalIn('Vendor'),icon:'🚚',color:'#f79009',colorS:'#fef3e2'},
+    {key:'tenantc',label:'Tenant Contacts',bucket:'Tenant',added:s.tenant,contract:CONTRACT_LIMITS.Tenant,portal:portalIn('Tenant'),icon:'🏢',color:'#12b76a',colorS:'#e7f7ee'},
+    {key:'tenants',label:'Tenants (entities)',bucket:'',added:s.tenantEntityCount,contract:0,info:true,icon:'🏬',color:'#15b8a6',colorS:'#e3f7f4'},
+    {key:'vendors',label:'Vendors (entities)',bucket:'',added:s.vendorEntityCount,contract:0,info:true,icon:'📦',color:'#667085',colorS:'#eef1f5'},
    ];
    return d.map(x=>({...x,pct:x.contract?Math.round((x.added/x.contract)*100):0}));},
-  rings(){if(!this.stats)return[];const c=this.cards;const f=k=>c.find(x=>x.key===k)||{pct:0};
-   return[{key:'m',title:'Maintenance Utilization',...f('maint')},{key:'v',title:'Vendor Utilization',...f('vendor')},{key:'t',title:'Tenant Utilization',...f('tenantc')},{key:'a',title:'Admin Utilization',...f('admin')}];},
+  gauges(){if(!this.stats)return[];const c=this.cards;const f=k=>c.find(x=>x.key===k);
+   return['admin','maint','vendor','tenantc'].map(k=>{const x=f(k);const pct=x.pct;return {key:k,title:x.label+' Utilization',added:x.added,contract:x.contract,pct:pct,capped:Math.min(100,pct),over:x.added>x.contract,color:x.color};});},
   bucketOptions(){return Array.from(new Set(this.users.map(u=>u.bucket)));},
-  filteredUsers(){let l=this.users;if(this.bucketFilter)l=l.filter(u=>u.bucket===this.bucketFilter);if(this.statusFilter)l=l.filter(u=>this.statusFilter==='active'?u.invite:!u.invite);if(this.search){const q=this.search.toLowerCase().trim();l=l.filter(u=>((u.name||'').toLowerCase().includes(q))||((u.email||'').toLowerCase().includes(q))||((u.bucket||'').toLowerCase().includes(q))||((u.role||'').toLowerCase().includes(q)));}return l;},
+  filteredUsers(){let l=this.users;if(this.bucketFilter)l=l.filter(u=>u.bucket===this.bucketFilter);if(this.statusFilter)l=l.filter(u=>this.statusFilter==='active'?u.invite:!u.invite);if(this.search){const q=this.search.toLowerCase().trim();l=l.filter(u=>((u.name||'').toLowerCase().includes(q))||((u.email||'').toLowerCase().includes(q))||((u.phone||'').toLowerCase().includes(q))||((u.bucket||'').toLowerCase().includes(q))||((u.role||'').toLowerCase().includes(q)));}return l;},
+  totalPages(){return Math.max(1,Math.ceil(this.filteredUsers.length/this.pageSize));},
   pagedUsers(){const s=(this.currentPage-1)*this.pageSize;return this.filteredUsers.slice(s,s+this.pageSize);}
  },
  mounted(){if(window.FacilioAppSDK){window.facilioApp=FacilioAppSDK.init();window.facilioApp.on("app.loaded",()=>{this.loadStats();});setTimeout(()=>{if(!this.loaded&&!this.loading)this.loadStats();},2000);}else{this.loadError='Facilio SDK not available.';}},
  methods:{
-  async loadStats(){this.loading=true;this.loadError=null;try{const {result}=await window.facilioApp.request.invokeFacilioAPI('/v2/workflow/runWorkflow',{method:'POST',data:{workflow:{isV2Script:true,workflowV2String:LICENSE_STATS_SCRIPT},paramList:[{}]}});const data=result&&result.workflow?result.workflow.returnValue:null;if(!data){throw new Error('No data returned from workflow.');}this.stats=data;this.users=data.users||[];this.loaded=true;this.lastUpdated=new Date().toLocaleTimeString();}catch(err){console.error(err);this.loadError='Could not load license data. '+(err&&err.message?err.message:'');}finally{this.loading=false;}},
+  async loadStats(){this.loading=true;this.loadError=null;try{const {result}=await window.facilioApp.request.invokeFacilioAPI('/v2/workflow/runWorkflow',{method:'POST',data:{workflow:{isV2Script:true,workflowV2String:LICENSE_STATS_SCRIPT},paramList:[{}]}});const data=result&&result.workflow?result.workflow.returnValue:null;if(!data){throw new Error('No data returned from workflow.');}this.stats=data;this.users=data.users||[];this.loaded=true;this.lastUpdated=new Date().toLocaleString();}catch(err){console.error(err);this.loadError='Could not load license data. '+(err&&err.message?err.message:'');}finally{this.loading=false;}},
   toggleBucket(b){this.bucketFilter=this.bucketFilter===b?'':b;},
   clearFilters(){this.bucketFilter='';this.statusFilter='';this.search='';this.currentPage=1;},
-  exportPDF(){const el=document.getElementById('capture');if(!el||!window.html2pdf)return;window.html2pdf().set({margin:6,filename:'cafm-license-dashboard.pdf',image:{type:'jpeg',quality:.95},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(el).save();},
+  exportPDF(){const el=document.getElementById('capture');if(!el||!window.html2pdf)return;const prevPage=this.currentPage,prevSize=this.pageSize;this.pageSize=100000;this.currentPage=1;this.$nextTick(()=>{setTimeout(()=>{window.html2pdf().set({margin:[6,6,10,6],filename:'CAFM-License-Dashboard.pdf',image:{type:'jpeg',quality:.96},html2canvas:{scale:2,useCORS:true,allowTaint:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'},pagebreak:{mode:['css','legacy']}}).from(el).save().then(()=>{this.pageSize=prevSize;this.currentPage=prevPage;});},350);});},
   badgeClass(p){return p>=100?'badge-crit':(p>=80?'badge-warn':'badge-ok');},
   fillClass(p){return p>=100?'f-crit':(p>=80?'f-warn':'f-ok');},
  },
  watch:{search(){this.currentPage=1;},bucketFilter(){this.currentPage=1;},statusFilter(){this.currentPage=1;}}
 });
 </script>
-</div>
 </body>
 </html>
