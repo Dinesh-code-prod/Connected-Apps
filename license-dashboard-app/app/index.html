@@ -9,7 +9,9 @@
 <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
 <script src="https://unpkg.com/element-ui/lib/index.js"></script>
 <script src="//unpkg.com/element-ui/lib/umd/locale/en.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{--primary:#5a3ec8;--primary2:#7a5af8;--ink:#101828;--muted:#667085;--line:#e4e7ec;--bg:#f4f5f8;--card:#fff;--ok:#12b76a;--ok-d:#039855;--warn:#f79009;--crit:#f04438;--ok-s:#e7f7ee;--warn-s:#fef3e2;--crit-s:#fdeceb;--pri-s:#efeafe;--head:#f9fafb;}
 *{box-sizing:border-box;}
@@ -159,7 +161,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
                 <el-input v-model="search" placeholder="Search by name, email, phone, type or role" size="small" clearable prefix-icon="el-icon-search"></el-input></div>
             <el-button size="small" icon="el-icon-close" @click="clearFilters" :disabled="!hasFilters">Clear Filters</el-button>
             <el-button type="primary" size="small" icon="el-icon-refresh" :loading="loading" @click="loadStats">Refresh</el-button>
-            <el-button size="small" icon="el-icon-download" @click="exportPDF">Export PDF</el-button>
+            <el-button size="small" icon="el-icon-download" :loading="pdfExporting" @click="exportPDF">Export PDF</el-button>
         </div>
 
         <div class="pdf-filters" v-if="loaded">Applied filters — Type: {{ bucketFilter||'All' }} · Invite: {{ statusFilter==='active'?'Accepted':(statusFilter==='inactive'?'Pending':'Any') }} · Search: {{ search||'—' }}</div>
@@ -168,6 +170,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
         <div v-else-if="loadError" class="errbox">⚠ {{ loadError }}</div>
 
         <template v-else-if="loaded">
+        <div id="pdf-kpi-gauge-capture">
         <div class="grid grid6">
             <div class="kpi" v-for="c in cards" :key="c.key" :class="{clickable:c.bucket, sel:c.bucket&&bucketFilter===c.bucket}" :style="{'--accent':c.color,'--accent-s':c.colorS}" @click="c.bucket?toggleBucket(c.bucket):null">
                 <div class="kpi-top">
@@ -205,6 +208,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
                 <div v-if="g.over" class="gauge-over">Over by {{ g.added-g.contract }}</div>
                 <div v-else class="gauge-under">{{ g.contract-g.added }} available</div>
             </div>
+        </div>
         </div>
 
         <div class="panel">
@@ -259,7 +263,7 @@ ELEMENT.locale(ELEMENT.lang.en);
 const CONTRACT_LIMITS={Admin:1,Maintenance:25,Vendor:100,Tenant:500};
 const LICENSE_STATS_SCRIPT="Map computeLicenseStats() {\r\n    result = {};\r\n    roleNameMap = {};\r\n    roleNameMap.put(\"531\", \"CAFM Super Administrator\");\r\n    roleNameMap.put(\"532\", \"CAFM Administrator\");\r\n    roleNameMap.put(\"614\", \"Cafm Operator\");\r\n    roleNameMap.put(\"615\", \"Technician\");\r\n    roleNameMap.put(\"616\", \"Store Keeper\");\r\n    roleNameMap.put(\"617\", \"Supervisor\");\r\n    roleNameMap.put(\"715\", \"IT Administrator\");\r\n    personRoleMap = {};\r\n    adminRoleIds = [531, 532];\r\n    adminPeople = Module(\"people\").getPeopleForRoles(adminRoleIds);\r\n    if (adminPeople != null) {\r\n        for each ai, ap in adminPeople {\r\n            personRoleMap.put(ap.id + \"\", \"Admin\");\r\n        }\r\n    }\r\n    maintRoleIds = [614, 615, 616, 617, 715];\r\n    maintRolePeople = Module(\"people\").getPeopleForRoles(maintRoleIds);\r\n    roleLabelMap = {};\r\n    if (maintRolePeople != null) {\r\n        for each mi, mp in maintRolePeople {\r\n            rid = mp.roleId + \"\";\r\n            rn = roleNameMap.get(rid);\r\n            if (rn == null) {\r\n                rn = \"Maintenance\";\r\n            }\r\n            personRoleMap.put(mp.id + \"\", \"Maintenance\");\r\n            roleLabelMap.put(mp.id + \"\", rn);\r\n        }\r\n    }\r\n    inviteMap = {};\r\n    userActiveMap = {};\r\n    verifiedMap = {};\r\n    userFetch = {};\r\n    userFetch.put(\"criteria\", [peopleId > 0]);\r\n    userFetch.put(\"limit\", 50);\r\n    allUsers = Module(\"users\").fetch(userFetch);\r\n    userLoginCount = 0;\r\n    if (allUsers != null) {\r\n        userLoginCount = allUsers.size();\r\n        for each ui, u in allUsers {\r\n            if (u.peopleId != null) {\r\n                upid = u.peopleId + \"\";\r\n                if (u.inviteAcceptStatus == true) {\r\n                    inviteMap.put(upid, true);\r\n                }\r\n                if (u.userStatus == true) {\r\n                    userActiveMap.put(upid, true);\r\n                }\r\n                if (u.userVerified == true) {\r\n                    verifiedMap.put(upid, true);\r\n                }\r\n                rid2 = u.roleId + \"\";\r\n                rn2 = roleNameMap.get(rid2);\r\n                if (rn2 != null) {\r\n                    roleLabelMap.put(upid, rn2);\r\n                }\r\n            }\r\n        }\r\n    }\r\n    admin = 0;\r\n    maintenance = 0;\r\n    vendor = 0;\r\n    tenant = 0;\r\n    requester = 0;\r\n    other = 0;\r\n    inviteAccepted = 0;\r\n    verifiedCount = 0;\r\n    userList = [];\r\n    peopleFetch = {};\r\n    peopleFetch.put(\"criteria\", [id > 0]);\r\n    peopleFetch.put(\"limit\", 5000);\r\n    allPeople = Module(\"people\").fetch(peopleFetch);\r\n    if (allPeople != null) {\r\n        for each index, p in allPeople {\r\n            pid = p.id + \"\";\r\n            roleBucket = personRoleMap.get(pid);\r\n            bucket = \"Other\";\r\n            if (roleBucket == \"Admin\") {\r\n                bucket = \"Admin\";\r\n                admin = admin + 1;\r\n            } else if (p.peopleType == 3) {\r\n                bucket = \"Maintenance\";\r\n                maintenance = maintenance + 1;\r\n            } else if (p.peopleType == 2) {\r\n                bucket = \"Vendor\";\r\n                vendor = vendor + 1;\r\n            } else if (p.peopleType == 1) {\r\n                bucket = \"Tenant\";\r\n                tenant = tenant + 1;\r\n            } else if (p.peopleType == 7) {\r\n                bucket = \"Requester\";\r\n                requester = requester + 1;\r\n            } else {\r\n                other = other + 1;\r\n            }\r\n            hasInvite = false;\r\n            if (inviteMap.get(pid) != null) {\r\n                hasInvite = true;\r\n                inviteAccepted = inviteAccepted + 1;\r\n            }\r\n            isVerified = false;\r\n            if (verifiedMap.get(pid) != null) {\r\n                isVerified = true;\r\n                verifiedCount = verifiedCount + 1;\r\n            }\r\n            roleDisplay = \"\";\r\n            rl = roleLabelMap.get(pid);\r\n            if (rl != null) {\r\n                roleDisplay = rl;\r\n            }\r\n            row = {};\r\n            row.name = p.name;\r\n            row.email = p.email;\r\n            row.phone = p.phone;\r\n            row.peopleType = p.peopleType;\r\n            row.bucket = bucket;\r\n            row.role = roleDisplay;\r\n            row.invite = hasInvite;\r\n            row.verified = isVerified;\r\n            userList.add(row);\r\n        }\r\n    }\r\n    tenantEntityCount = 0;\r\n    tf = {};\r\n    tf.put(\"criteria\", [id > 0]);\r\n    tf.put(\"limit\", 5000);\r\n    te = Module(\"tenant\").fetch(tf);\r\n    if (te != null) {\r\n        tenantEntityCount = te.size();\r\n    }\r\n    vendorEntityCount = 0;\r\n    vf = {};\r\n    vf.put(\"criteria\", [id > 0]);\r\n    vf.put(\"limit\", 5000);\r\n    ve = Module(\"vendors\").fetch(vf);\r\n    if (ve != null) {\r\n        vendorEntityCount = ve.size();\r\n    }\r\n    result.admin = admin;\r\n    result.maintenance = maintenance;\r\n    result.vendor = vendor;\r\n    result.tenant = tenant;\r\n    result.requester = requester;\r\n    result.other = other;\r\n    result.inviteAccepted = inviteAccepted;\r\n    result.verifiedCount = verifiedCount;\r\n    result.userLoginCount = userLoginCount;\r\n    result.tenantEntityCount = tenantEntityCount;\r\n    result.vendorEntityCount = vendorEntityCount;\r\n    result.users = userList;\r\n    return result;\r\n}\r\n";
 var app=new Vue({el:'#app',
- data:{loading:false,loaded:false,loadError:null,lastUpdated:null,stats:null,users:[],search:'',bucketFilter:'',statusFilter:'',currentPage:1,pageSize:15,circ:2*Math.PI*66},
+ data:{loading:false,loaded:false,loadError:null,lastUpdated:null,stats:null,users:[],search:'',bucketFilter:'',statusFilter:'',currentPage:1,pageSize:15,circ:2*Math.PI*66,pdfExporting:false},
  computed:{
   hasFilters(){return !!(this.bucketFilter||this.statusFilter||this.search);},
   activeFilterLabel(){let p=[];if(this.bucketFilter)p.push(this.bucketFilter);if(this.statusFilter)p.push(this.statusFilter==='active'?'Accepted':'Pending');return p.length?' · '+p.join(' · '):'';},
@@ -286,37 +290,91 @@ var app=new Vue({el:'#app',
   async loadStats(){this.loading=true;this.loadError=null;try{const {result}=await window.facilioApp.request.invokeFacilioAPI('/v2/workflow/runWorkflow',{method:'POST',data:{workflow:{isV2Script:true,workflowV2String:LICENSE_STATS_SCRIPT},paramList:[{}]}});const data=result&&result.workflow?result.workflow.returnValue:null;if(!data){throw new Error('No data returned from workflow.');}this.stats=data;this.users=data.users||[];this.loaded=true;this.lastUpdated=new Date().toLocaleString();}catch(err){console.error(err);this.loadError='Could not load license data. '+(err&&err.message?err.message:'');}finally{this.loading=false;}},
   toggleBucket(b){this.bucketFilter=this.bucketFilter===b?'':b;},
   clearFilters(){this.bucketFilter='';this.statusFilter='';this.search='';this.currentPage=1;},
-  exportPDF(){
-    const el=document.getElementById('capture');
-    if(!el||!window.html2pdf){ this.$message && this.$message.error('PDF library not ready'); return; }
-    const prevPage=this.currentPage, prevSize=this.pageSize;
-    // expand all rows so the table isn't split oddly
-    this.pageSize=100000; this.currentPage=1;
-    // hide logo images during capture (cross-origin images blank the canvas); text fallbacks remain
-    const imgs=el.querySelectorAll('img');
-    const hidden=[];
-    imgs.forEach(im=>{ hidden.push([im, im.style.display]); im.style.display='none'; if(im.nextElementSibling){ im.nextElementSibling.style.display='inline-flex'; } });
-    this.$nextTick(()=>{
-      setTimeout(()=>{
-        // neutralize transitions/animations which html2canvas mis-parses
-        const killer=document.createElement('style');
-        killer.id='pdf-killer';
-        killer.textContent='*{transition:none !important;animation:none !important;}';
-        document.head.appendChild(killer);
-        const cleanup=()=>{
-          const k=document.getElementById('pdf-killer'); if(k) k.remove();
-          hidden.forEach(([im,d])=>{ im.style.display=d||''; if(im.nextElementSibling){ im.nextElementSibling.style.display='none'; } });
-          this.pageSize=prevSize; this.currentPage=prevPage;
-        };
-        window.html2pdf().set({
-          margin:[8,8,12,8],
-          filename:'CAFM-License-Dashboard.pdf',
-          image:{type:'jpeg',quality:.95},
-          html2canvas:{scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false, scrollX:0, scrollY:0, windowWidth:el.scrollWidth},
-          jsPDF:{unit:'mm',format:'a4',orientation:'landscape'},
-          pagebreak:{mode:['css','legacy']}
-        }).from(el).save().then(cleanup).catch((e)=>{ console.error('PDF export failed',e); cleanup(); });
-      },600);
+  async exportPDF(){
+    if(!this.loaded) return;
+    if(!window.html2canvas || !window.jspdf || !window.jspdf.jsPDF){
+      this.$message && this.$message.error('PDF library not ready, please try again in a moment');
+      return;
+    }
+    this.pdfExporting = true;
+    try{
+      const topEl = document.querySelector('.topbar');
+      const kgEl = document.getElementById('pdf-kpi-gauge-capture');
+      const capOpts = (el)=>({
+        scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false,
+        scrollX:-window.scrollX, scrollY:-window.scrollY,
+        windowWidth: el.scrollWidth, windowHeight: el.scrollHeight,
+        width: el.scrollWidth, height: el.scrollHeight
+      });
+      const topCanvas = topEl ? await window.html2canvas(topEl, capOpts(topEl)) : null;
+      const kgCanvas = kgEl ? await window.html2canvas(kgEl, capOpts(kgEl)) : null;
+      const logoData = await this.loadImageAsDataURL('/images.png');
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({unit:'mm',format:'a4',orientation:'landscape'});
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const margin = 8;
+      const usableW = pageW - margin*2;
+      let y = margin;
+
+      const addCanvasImg=(canvas)=>{
+        if(!canvas) return;
+        const imgData = canvas.toDataURL('image/jpeg',0.95);
+        const h = (canvas.height*usableW)/canvas.width;
+        if(y+h > pageH-16){ doc.addPage(); y=margin; }
+        doc.addImage(imgData,'JPEG',margin,y,usableW,h);
+        y += h + 6;
+      };
+      addCanvasImg(topCanvas);
+      addCanvasImg(kgCanvas);
+
+      // full filtered list (NOT just the current page) so a selected Type
+      // (e.g. Tenant, ~850 rows) exports every matching row
+      const rows = this.filteredUsers.map(u=>[u.name||'—',u.email||'—',u.phone||'—',u.bucket||'—',u.role||'—',u.invite?'Accepted':'Pending']);
+
+      doc.autoTable({
+        head:[['User','Email','Mobile Number','Type','Role','Invite Status']],
+        body: rows,
+        startY: y,
+        margin:{left:margin,right:margin,bottom:16},
+        styles:{fontSize:8.5,cellPadding:3,overflow:'linebreak'},
+        headStyles:{fillColor:[90,62,200],textColor:255,fontStyle:'bold'},
+        alternateRowStyles:{fillColor:[247,248,251]},
+        didDrawPage: ()=>{
+          doc.setFontSize(9);
+          doc.setTextColor(102,112,133);
+          if(logoData){
+            try{
+              doc.addImage(logoData,'PNG', pageW/2-24, pageH-12, 8, 8);
+              doc.text('Powered by Facilio', pageW/2-14, pageH-7);
+            }catch(e){
+              doc.text('Powered by Facilio', pageW/2, pageH-7, {align:'center'});
+            }
+          } else {
+            doc.text('Powered by Facilio', pageW/2, pageH-7, {align:'center'});
+          }
+        }
+      });
+
+      const label = this.bucketFilter || 'All';
+      doc.save('CAFM-License-Dashboard_'+label+'.pdf');
+    }catch(e){
+      console.error('PDF export failed', e);
+      this.$message && this.$message.error('PDF export failed: '+(e&&e.message?e.message:''));
+    }finally{
+      this.pdfExporting = false;
+    }
+  },
+  loadImageAsDataURL(url){
+    return new Promise((resolve)=>{
+      fetch(url).then(r=>{ if(!r.ok) throw new Error('missing'); return r.blob(); })
+        .then(blob=>{
+          const reader=new FileReader();
+          reader.onloadend=()=>resolve(reader.result);
+          reader.onerror=()=>resolve(null);
+          reader.readAsDataURL(blob);
+        }).catch(()=>resolve(null));
     });
   },
   badgeClass(p){return p>=100?'badge-crit':(p>=80?'badge-warn':'badge-ok');},
