@@ -374,7 +374,7 @@ var app=new Vue({el:'#app',
       // Latin-only and mangle non-Latin text. Chunking keeps each
       // individual canvas well under the browser's max-canvas-height
       // limit even for large lists (e.g. 850 Tenant rows).
-      const CHUNK = 15;
+      const CHUNK = 18;
       const list = this.filteredUsers;
       for(let i=0;i<list.length;i+=CHUNK){
         this.pdfChunkRows = list.slice(i, i+CHUNK);
