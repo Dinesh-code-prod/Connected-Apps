@@ -16,7 +16,7 @@
 *{box-sizing:border-box;}
 html,body{margin:0;height:100%;}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px;}
-.wrap{width:100%;max-width:1880px;margin:0 auto;padding:22px 30px 100px;}
+.wrap{width:100%;max-width:1880px;margin:0 auto;padding:22px 30px 46px;}
 .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 22px;box-shadow:0 1px 3px rgba(16,24,40,.05);}
 .org{display:flex;gap:18px;align-items:flex-start;}
 .org-logo{height:66px;width:auto;max-width:200px;object-fit:contain;}
@@ -250,18 +250,8 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
         </div>
         </template>
     </div>
-  <div class="no-print"
-     style="
-        margin-top:40px;
-        padding:20px 0;
-        text-align:center;
-        color:#98a2b3;
-        font-size:12px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        gap:7px;">
-   <span>Powered by</span>
+    <div class="no-print" style="text-align:center;padding:18px;color:#98a2b3;font-size:12px;display:flex;align-items:center;justify-content:center;gap:7px;">
+        <span>Powered by</span>
         <img src="/images.png" alt="Facilio" style="height:18px;width:auto;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
         <b style="display:none;color:#5a3ec8;">Facilio</b>
     </div>
@@ -343,18 +333,23 @@ var app=new Vue({el:'#app',
       const pageH = doc.internal.pageSize.getHeight();
       const margin = 8;
       const usableW = pageW - margin*2;
+      const FOOTER_ZONE = 18; // mm reserved at the bottom of every page so content never runs into the footer
+      const contentLimit = pageH - FOOTER_ZONE;
       let y = margin;
 
       const drawFooter=()=>{
+        doc.setDrawColor(228,231,236);
+        doc.setLineWidth(0.2);
+        doc.line(margin, pageH-FOOTER_ZONE+4, pageW-margin, pageH-FOOTER_ZONE+4);
         doc.setFontSize(9);
         doc.setTextColor(102,112,133);
         if(logoData){
           try{
-            doc.addImage(logoData,'PNG', pageW/2-24, pageH-12, 8, 8);
-            doc.text('Powered by Facilio', pageW/2-14, pageH-7);
-          }catch(e){ doc.text('Powered by Facilio', pageW/2, pageH-7, {align:'center'}); }
+            doc.addImage(logoData,'PNG', pageW/2-24, pageH-11, 8, 8);
+            doc.text('Powered by Facilio', pageW/2-14, pageH-6);
+          }catch(e){ doc.text('Powered by Facilio', pageW/2, pageH-6, {align:'center'}); }
         } else {
-          doc.text('Powered by Facilio', pageW/2, pageH-7, {align:'center'});
+          doc.text('Powered by Facilio', pageW/2, pageH-6, {align:'center'});
         }
       };
 
@@ -362,7 +357,7 @@ var app=new Vue({el:'#app',
         if(!canvas) return;
         const imgData = canvas.toDataURL('image/jpeg',0.95);
         const h = (canvas.height*usableW)/canvas.width;
-        if(y+h > pageH-16){ drawFooter(); doc.addPage(); y=margin; }
+        if(y+h > contentLimit){ drawFooter(); doc.addPage(); y=margin; }
         doc.addImage(imgData,'JPEG',margin,y,usableW,h);
         y += h + 6;
       };
@@ -384,7 +379,7 @@ var app=new Vue({el:'#app',
         const chunkCanvas = await window.html2canvas(tableEl, capOpts(tableEl));
         const imgData = chunkCanvas.toDataURL('image/jpeg',0.95);
         const h = (chunkCanvas.height*usableW)/chunkCanvas.width;
-        if(y+h > pageH-16){ drawFooter(); doc.addPage(); y=margin; }
+        if(y+h > contentLimit){ drawFooter(); doc.addPage(); y=margin; }
         doc.addImage(imgData,'JPEG',margin,y,usableW,h);
         y += h + 3;
       }
