@@ -11,7 +11,6 @@
 <script src="//unpkg.com/element-ui/lib/umd/locale/en.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{--primary:#5a3ec8;--primary2:#7a5af8;--ink:#101828;--muted:#667085;--line:#e4e7ec;--bg:#f4f5f8;--card:#fff;--ok:#12b76a;--ok-d:#039855;--warn:#f79009;--crit:#f04438;--ok-s:#e7f7ee;--warn-s:#fef3e2;--crit-s:#fdeceb;--pri-s:#efeafe;--head:#f9fafb;}
 *{box-sizing:border-box;}
@@ -19,11 +18,11 @@ html,body{margin:0;height:100%;}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px;}
 .wrap{width:100%;max-width:1880px;margin:0 auto;padding:22px 30px 46px;}
 .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 22px;box-shadow:0 1px 3px rgba(16,24,40,.05);}
-.org{display:flex;gap:14px;align-items:flex-start;}
-.org-logo{height:46px;width:auto;max-width:150px;object-fit:contain;}
-.org-logo-fallback{height:46px;min-width:46px;padding:0 12px;border-radius:10px;background:linear-gradient(135deg,#0a2540,#12385e);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;letter-spacing:1px;}
-.org-info{font-size:11.5px;color:var(--muted);line-height:1.5;}
-.org-info .nm{font-size:14px;font-weight:800;color:var(--ink);}
+.org{display:flex;gap:18px;align-items:flex-start;}
+.org-logo{height:66px;width:auto;max-width:200px;object-fit:contain;}
+.org-logo-fallback{height:66px;min-width:66px;padding:0 16px;border-radius:12px;background:linear-gradient(135deg,#0a2540,#12385e);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;letter-spacing:1px;}
+.org-info{font-size:13.5px;color:var(--muted);line-height:1.65;}
+.org-info .nm{font-size:18px;font-weight:800;color:var(--ink);margin-bottom:2px;}
 .title-block{text-align:right;}
 .title-block .mgr{font-size:12px;font-weight:800;color:var(--primary);letter-spacing:.3px;}
 .title-block .h1{font-size:22px;font-weight:800;letter-spacing:-.01em;margin-top:2px;}
@@ -256,6 +255,23 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
         <img src="/images.png" alt="Facilio" style="height:18px;width:auto;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
         <b style="display:none;color:#5a3ec8;">Facilio</b>
     </div>
+    <div id="pdf-table-capture" style="position:absolute;left:-99999px;top:0;width:1400px;background:#fff;">
+        <table class="utbl">
+            <thead><tr>
+                <th style="width:20%;">User</th><th style="width:26%;">Email</th><th style="width:15%;">Mobile Number</th><th style="width:11%;">Type</th><th style="width:16%;">Role</th><th style="width:12%;">Invite Status</th>
+            </tr></thead>
+            <tbody>
+                <tr v-for="(u,i) in pdfChunkRows" :key="i">
+                    <td style="font-weight:700;color:#101828;font-size:15px;">{{ u.name || '—' }}</td>
+                    <td>{{ u.email || '—' }}</td>
+                    <td>{{ u.phone || '—' }}</td>
+                    <td><span class="tag" :class="'t-'+u.bucket">{{ u.bucket }}</span></td>
+                    <td><span v-if="u.role" class="rolechip">{{ u.role }}</span><span v-else style="color:#c2c8d2;">—</span></td>
+                    <td><span class="stpill" :class="u.invite?'st-on':'st-off'"><span class="dot"></span>{{ u.invite?'Accepted':'Pending' }}</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script type="text/javascript">
@@ -263,7 +279,7 @@ ELEMENT.locale(ELEMENT.lang.en);
 const CONTRACT_LIMITS={Admin:1,Maintenance:25,Vendor:100,Tenant:500};
 const LICENSE_STATS_SCRIPT="Map computeLicenseStats() {\r\n    result = {};\r\n    roleNameMap = {};\r\n    roleNameMap.put(\"531\", \"CAFM Super Administrator\");\r\n    roleNameMap.put(\"532\", \"CAFM Administrator\");\r\n    roleNameMap.put(\"614\", \"Cafm Operator\");\r\n    roleNameMap.put(\"615\", \"Technician\");\r\n    roleNameMap.put(\"616\", \"Store Keeper\");\r\n    roleNameMap.put(\"617\", \"Supervisor\");\r\n    roleNameMap.put(\"715\", \"IT Administrator\");\r\n    personRoleMap = {};\r\n    adminRoleIds = [531, 532];\r\n    adminPeople = Module(\"people\").getPeopleForRoles(adminRoleIds);\r\n    if (adminPeople != null) {\r\n        for each ai, ap in adminPeople {\r\n            personRoleMap.put(ap.id + \"\", \"Admin\");\r\n        }\r\n    }\r\n    maintRoleIds = [614, 615, 616, 617, 715];\r\n    maintRolePeople = Module(\"people\").getPeopleForRoles(maintRoleIds);\r\n    roleLabelMap = {};\r\n    if (maintRolePeople != null) {\r\n        for each mi, mp in maintRolePeople {\r\n            rid = mp.roleId + \"\";\r\n            rn = roleNameMap.get(rid);\r\n            if (rn == null) {\r\n                rn = \"Maintenance\";\r\n            }\r\n            personRoleMap.put(mp.id + \"\", \"Maintenance\");\r\n            roleLabelMap.put(mp.id + \"\", rn);\r\n        }\r\n    }\r\n    inviteMap = {};\r\n    userActiveMap = {};\r\n    verifiedMap = {};\r\n    userFetch = {};\r\n    userFetch.put(\"criteria\", [peopleId > 0]);\r\n    userFetch.put(\"limit\", 50);\r\n    allUsers = Module(\"users\").fetch(userFetch);\r\n    userLoginCount = 0;\r\n    if (allUsers != null) {\r\n        userLoginCount = allUsers.size();\r\n        for each ui, u in allUsers {\r\n            if (u.peopleId != null) {\r\n                upid = u.peopleId + \"\";\r\n                if (u.inviteAcceptStatus == true) {\r\n                    inviteMap.put(upid, true);\r\n                }\r\n                if (u.userStatus == true) {\r\n                    userActiveMap.put(upid, true);\r\n                }\r\n                if (u.userVerified == true) {\r\n                    verifiedMap.put(upid, true);\r\n                }\r\n                rid2 = u.roleId + \"\";\r\n                rn2 = roleNameMap.get(rid2);\r\n                if (rn2 != null) {\r\n                    roleLabelMap.put(upid, rn2);\r\n                }\r\n            }\r\n        }\r\n    }\r\n    admin = 0;\r\n    maintenance = 0;\r\n    vendor = 0;\r\n    tenant = 0;\r\n    requester = 0;\r\n    other = 0;\r\n    inviteAccepted = 0;\r\n    verifiedCount = 0;\r\n    userList = [];\r\n    peopleFetch = {};\r\n    peopleFetch.put(\"criteria\", [id > 0]);\r\n    peopleFetch.put(\"limit\", 5000);\r\n    allPeople = Module(\"people\").fetch(peopleFetch);\r\n    if (allPeople != null) {\r\n        for each index, p in allPeople {\r\n            pid = p.id + \"\";\r\n            roleBucket = personRoleMap.get(pid);\r\n            bucket = \"Other\";\r\n            if (roleBucket == \"Admin\") {\r\n                bucket = \"Admin\";\r\n                admin = admin + 1;\r\n            } else if (p.peopleType == 3) {\r\n                bucket = \"Maintenance\";\r\n                maintenance = maintenance + 1;\r\n            } else if (p.peopleType == 2) {\r\n                bucket = \"Vendor\";\r\n                vendor = vendor + 1;\r\n            } else if (p.peopleType == 1) {\r\n                bucket = \"Tenant\";\r\n                tenant = tenant + 1;\r\n            } else if (p.peopleType == 7) {\r\n                bucket = \"Requester\";\r\n                requester = requester + 1;\r\n            } else {\r\n                other = other + 1;\r\n            }\r\n            hasInvite = false;\r\n            if (inviteMap.get(pid) != null) {\r\n                hasInvite = true;\r\n                inviteAccepted = inviteAccepted + 1;\r\n            }\r\n            isVerified = false;\r\n            if (verifiedMap.get(pid) != null) {\r\n                isVerified = true;\r\n                verifiedCount = verifiedCount + 1;\r\n            }\r\n            roleDisplay = \"\";\r\n            rl = roleLabelMap.get(pid);\r\n            if (rl != null) {\r\n                roleDisplay = rl;\r\n            }\r\n            row = {};\r\n            row.name = p.name;\r\n            row.email = p.email;\r\n            row.phone = p.phone;\r\n            row.peopleType = p.peopleType;\r\n            row.bucket = bucket;\r\n            row.role = roleDisplay;\r\n            row.invite = hasInvite;\r\n            row.verified = isVerified;\r\n            userList.add(row);\r\n        }\r\n    }\r\n    tenantEntityCount = 0;\r\n    tf = {};\r\n    tf.put(\"criteria\", [id > 0]);\r\n    tf.put(\"limit\", 5000);\r\n    te = Module(\"tenant\").fetch(tf);\r\n    if (te != null) {\r\n        tenantEntityCount = te.size();\r\n    }\r\n    vendorEntityCount = 0;\r\n    vf = {};\r\n    vf.put(\"criteria\", [id > 0]);\r\n    vf.put(\"limit\", 5000);\r\n    ve = Module(\"vendors\").fetch(vf);\r\n    if (ve != null) {\r\n        vendorEntityCount = ve.size();\r\n    }\r\n    result.admin = admin;\r\n    result.maintenance = maintenance;\r\n    result.vendor = vendor;\r\n    result.tenant = tenant;\r\n    result.requester = requester;\r\n    result.other = other;\r\n    result.inviteAccepted = inviteAccepted;\r\n    result.verifiedCount = verifiedCount;\r\n    result.userLoginCount = userLoginCount;\r\n    result.tenantEntityCount = tenantEntityCount;\r\n    result.vendorEntityCount = vendorEntityCount;\r\n    result.users = userList;\r\n    return result;\r\n}\r\n";
 var app=new Vue({el:'#app',
- data:{loading:false,loaded:false,loadError:null,lastUpdated:null,stats:null,users:[],search:'',bucketFilter:'',statusFilter:'',currentPage:1,pageSize:15,circ:2*Math.PI*66,pdfExporting:false},
+ data:{loading:false,loaded:false,loadError:null,lastUpdated:null,stats:null,users:[],search:'',bucketFilter:'',statusFilter:'',currentPage:1,pageSize:15,circ:2*Math.PI*66,pdfExporting:false,pdfChunkRows:[]},
  computed:{
   hasFilters(){return !!(this.bucketFilter||this.statusFilter||this.search);},
   activeFilterLabel(){let p=[];if(this.bucketFilter)p.push(this.bucketFilter);if(this.statusFilter)p.push(this.statusFilter==='active'?'Accepted':'Pending');return p.length?' · '+p.join(' · '):'';},
@@ -300,6 +316,7 @@ var app=new Vue({el:'#app',
     try{
       const topEl = document.querySelector('.topbar');
       const kgEl = document.getElementById('pdf-kpi-gauge-capture');
+      const tableEl = document.getElementById('pdf-table-capture');
       const capOpts = (el)=>({
         scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false,
         scrollX:-window.scrollX, scrollY:-window.scrollY,
@@ -318,44 +335,51 @@ var app=new Vue({el:'#app',
       const usableW = pageW - margin*2;
       let y = margin;
 
+      const drawFooter=()=>{
+        doc.setFontSize(9);
+        doc.setTextColor(102,112,133);
+        if(logoData){
+          try{
+            doc.addImage(logoData,'PNG', pageW/2-24, pageH-12, 8, 8);
+            doc.text('Powered by Facilio', pageW/2-14, pageH-7);
+          }catch(e){ doc.text('Powered by Facilio', pageW/2, pageH-7, {align:'center'}); }
+        } else {
+          doc.text('Powered by Facilio', pageW/2, pageH-7, {align:'center'});
+        }
+      };
+
       const addCanvasImg=(canvas)=>{
         if(!canvas) return;
         const imgData = canvas.toDataURL('image/jpeg',0.95);
         const h = (canvas.height*usableW)/canvas.width;
-        if(y+h > pageH-16){ doc.addPage(); y=margin; }
+        if(y+h > pageH-16){ drawFooter(); doc.addPage(); y=margin; }
         doc.addImage(imgData,'JPEG',margin,y,usableW,h);
         y += h + 6;
       };
       addCanvasImg(topCanvas);
       addCanvasImg(kgCanvas);
 
-      // full filtered list (NOT just the current page) so a selected Type
-      // (e.g. Tenant, ~850 rows) exports every matching row
-      const rows = this.filteredUsers.map(u=>[u.name||'—',u.email||'—',u.phone||'—',u.bucket||'—',u.role||'—',u.invite?'Accepted':'Pending']);
-
-      doc.autoTable({
-        head:[['User','Email','Mobile Number','Type','Role','Invite Status']],
-        body: rows,
-        startY: y,
-        margin:{left:margin,right:margin,bottom:16},
-        styles:{fontSize:8.5,cellPadding:3,overflow:'linebreak'},
-        headStyles:{fillColor:[90,62,200],textColor:255,fontStyle:'bold'},
-        alternateRowStyles:{fillColor:[247,248,251]},
-        didDrawPage: ()=>{
-          doc.setFontSize(9);
-          doc.setTextColor(102,112,133);
-          if(logoData){
-            try{
-              doc.addImage(logoData,'PNG', pageW/2-24, pageH-12, 8, 8);
-              doc.text('Powered by Facilio', pageW/2-14, pageH-7);
-            }catch(e){
-              doc.text('Powered by Facilio', pageW/2, pageH-7, {align:'center'});
-            }
-          } else {
-            doc.text('Powered by Facilio', pageW/2, pageH-7, {align:'center'});
-          }
-        }
-      });
+      // Render the user table as real screenshots, in small row-chunks.
+      // Screenshotting (instead of asking jsPDF's built-in font to draw
+      // the text) means Arabic, or any other script/emoji, renders
+      // pixel-identical to what's on screen -- jsPDF's default fonts are
+      // Latin-only and mangle non-Latin text. Chunking keeps each
+      // individual canvas well under the browser's max-canvas-height
+      // limit even for large lists (e.g. 850 Tenant rows).
+      const CHUNK = 28;
+      const list = this.filteredUsers;
+      for(let i=0;i<list.length;i+=CHUNK){
+        this.pdfChunkRows = list.slice(i, i+CHUNK);
+        await this.$nextTick();
+        const chunkCanvas = await window.html2canvas(tableEl, capOpts(tableEl));
+        const imgData = chunkCanvas.toDataURL('image/jpeg',0.95);
+        const h = (chunkCanvas.height*usableW)/chunkCanvas.width;
+        if(y+h > pageH-16){ drawFooter(); doc.addPage(); y=margin; }
+        doc.addImage(imgData,'JPEG',margin,y,usableW,h);
+        y += h + 3;
+      }
+      this.pdfChunkRows = [];
+      drawFooter();
 
       const label = this.bucketFilter || 'All';
       doc.save('CAFM-License-Dashboard_'+label+'.pdf');
@@ -364,6 +388,7 @@ var app=new Vue({el:'#app',
       this.$message && this.$message.error('PDF export failed: '+(e&&e.message?e.message:''));
     }finally{
       this.pdfExporting = false;
+      this.pdfChunkRows = [];
     }
   },
   loadImageAsDataURL(url){
