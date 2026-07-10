@@ -37,13 +37,13 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 @media(max-width:1400px){.grid6{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:1100px){.grid4{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:760px){.grid6{grid-template-columns:repeat(2,1fr);}}
-.kpi{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;min-height:176px;display:flex;flex-direction:column;gap:11px;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,.05);transition:transform .16s,box-shadow .16s,border-color .16s;}
-.kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:var(--accent,var(--primary));}
+.kpi{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;min-height:176px;display:flex;flex-direction:column;gap:11px;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,.05);transition:all .16s;}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:var(--accent);}
 .kpi.clickable{cursor:pointer;}
 .kpi.clickable:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(16,24,40,.13);border-color:#d4c9f7;}
 .kpi.sel{border-color:var(--primary);box-shadow:0 0 0 3px var(--pri-s);}
 .kpi-top{display:flex;justify-content:space-between;align-items:flex-start;}
-.kpi-ic{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--accent-s,var(--pri-s));}
+.kpi-ic{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--accent-s);}
 .badge{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;white-space:nowrap;}
 .badge-ok{color:var(--ok-d);background:var(--ok-s);}
 .badge-warn{color:#b54708;background:var(--warn-s);}
@@ -65,7 +65,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .kpi-foot.exceeded{color:var(--crit);}
 .kpi-foot.okleft{color:var(--ok-d);}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:18px;box-shadow:0 1px 3px rgba(16,24,40,.05);}
-.gauge-card{display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .16s,box-shadow .16s;}
+.gauge-card{display:flex;flex-direction:column;align-items:center;gap:6px;transition:all .16s;}
 .gauge-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(16,24,40,.1);}
 .gauge-title{font-size:13px;font-weight:700;color:var(--muted);align-self:flex-start;}
 .gauge-wrap{position:relative;width:158px;height:158px;margin:2px auto;}
@@ -80,10 +80,10 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .panel-title{font-size:17px;font-weight:800;}
 .panel-sub{font-size:12.5px;color:var(--muted);margin-top:3px;}
 /* structured table */
-.utbl{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px;}
-.utbl thead th{background:var(--primary);color:#fff;text-align:left;font-weight:700;font-size:12.5px;padding:11px 14px;border-right:1px solid rgba(255,255,255,.15);white-space:nowrap;}
+.utbl{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:14.5px;}
+.utbl thead th{background:var(--primary);color:#fff;text-align:left;font-weight:800;font-size:13.5px;padding:13px 16px;border-right:1px solid rgba(255,255,255,.15);white-space:nowrap;}
 .utbl thead th:last-child{border-right:none;}
-.utbl tbody td{padding:10px 14px;border-right:1px solid var(--line);border-top:1px solid var(--line);color:#344054;}
+.utbl tbody td{padding:12px 16px;border-right:1px solid var(--line);border-top:1px solid var(--line);color:#1d2939;font-weight:500;}
 .utbl tbody td:last-child{border-right:none;}
 .utbl tbody tr:nth-child(odd){background:#fff;}
 .utbl tbody tr:nth-child(even){background:#f7f8fb;}
@@ -105,7 +105,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .pgbtns button:hover:not(:disabled){border-color:var(--primary);color:var(--primary);}
 .pgbtns button:disabled{opacity:.45;cursor:not-allowed;}
 .pdf-footer{display:none;}
-.el-button{transition:transform .12s,box-shadow .12s;}
+.el-button{transition:all .12s;}
 .el-button:hover{transform:translateY(-1px);}
 .loading,.errbox,.empty{text-align:center;color:var(--muted);padding:56px 20px;}
 .errbox{color:var(--crit);}
@@ -219,7 +219,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
                 </tr></thead>
                 <tbody>
                     <tr v-for="(u,i) in pagedUsers" :key="i">
-                        <td style="font-weight:600;color:#101828;">{{ u.name || '—' }}</td>
+                        <td style="font-weight:700;color:#101828;font-size:15px;">{{ u.name || '—' }}</td>
                         <td>{{ u.email || '—' }}</td>
                         <td>{{ u.phone || '—' }}</td>
                         <td><span class="tag" :class="'t-'+u.bucket">{{ u.bucket }}</span></td>
@@ -286,7 +286,39 @@ var app=new Vue({el:'#app',
   async loadStats(){this.loading=true;this.loadError=null;try{const {result}=await window.facilioApp.request.invokeFacilioAPI('/v2/workflow/runWorkflow',{method:'POST',data:{workflow:{isV2Script:true,workflowV2String:LICENSE_STATS_SCRIPT},paramList:[{}]}});const data=result&&result.workflow?result.workflow.returnValue:null;if(!data){throw new Error('No data returned from workflow.');}this.stats=data;this.users=data.users||[];this.loaded=true;this.lastUpdated=new Date().toLocaleString();}catch(err){console.error(err);this.loadError='Could not load license data. '+(err&&err.message?err.message:'');}finally{this.loading=false;}},
   toggleBucket(b){this.bucketFilter=this.bucketFilter===b?'':b;},
   clearFilters(){this.bucketFilter='';this.statusFilter='';this.search='';this.currentPage=1;},
-  exportPDF(){const el=document.getElementById('capture');if(!el||!window.html2pdf)return;const prevPage=this.currentPage,prevSize=this.pageSize;this.pageSize=100000;this.currentPage=1;this.$nextTick(()=>{setTimeout(()=>{window.html2pdf().set({margin:[6,6,10,6],filename:'CAFM-License-Dashboard.pdf',image:{type:'jpeg',quality:.96},html2canvas:{scale:2,useCORS:true,allowTaint:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'},pagebreak:{mode:['css','legacy']}}).from(el).save().then(()=>{this.pageSize=prevSize;this.currentPage=prevPage;});},350);});},
+  exportPDF(){
+    const el=document.getElementById('capture');
+    if(!el||!window.html2pdf){ this.$message && this.$message.error('PDF library not ready'); return; }
+    const prevPage=this.currentPage, prevSize=this.pageSize;
+    // expand all rows so the table isn't split oddly
+    this.pageSize=100000; this.currentPage=1;
+    // hide logo images during capture (cross-origin images blank the canvas); text fallbacks remain
+    const imgs=el.querySelectorAll('img');
+    const hidden=[];
+    imgs.forEach(im=>{ hidden.push([im, im.style.display]); im.style.display='none'; if(im.nextElementSibling){ im.nextElementSibling.style.display='inline-flex'; } });
+    this.$nextTick(()=>{
+      setTimeout(()=>{
+        // neutralize transitions/animations which html2canvas mis-parses
+        const killer=document.createElement('style');
+        killer.id='pdf-killer';
+        killer.textContent='*{transition:none !important;animation:none !important;}';
+        document.head.appendChild(killer);
+        const cleanup=()=>{
+          const k=document.getElementById('pdf-killer'); if(k) k.remove();
+          hidden.forEach(([im,d])=>{ im.style.display=d||''; if(im.nextElementSibling){ im.nextElementSibling.style.display='none'; } });
+          this.pageSize=prevSize; this.currentPage=prevPage;
+        };
+        window.html2pdf().set({
+          margin:[8,8,12,8],
+          filename:'CAFM-License-Dashboard.pdf',
+          image:{type:'jpeg',quality:.95},
+          html2canvas:{scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false, scrollX:0, scrollY:0, windowWidth:el.scrollWidth},
+          jsPDF:{unit:'mm',format:'a4',orientation:'landscape'},
+          pagebreak:{mode:['css','legacy']}
+        }).from(el).save().then(cleanup).catch((e)=>{ console.error('PDF export failed',e); cleanup(); });
+      },600);
+    });
+  },
   badgeClass(p){return p>=100?'badge-crit':(p>=80?'badge-warn':'badge-ok');},
   fillClass(p){return p>=100?'f-crit':(p>=80?'f-warn':'f-ok');},
  },
