@@ -20,19 +20,4 @@
  * Reference copies live in org-configs/<org>.org_customizations.js.
  */
 
-window.ORG_CUSTOMIZATIONS = {
-  workorder: {
-    functions: [
-      { id: "woAddl", nameSpace: "pdfPrintFetchFunctions", functionName: "fetchWorkorderAdditionalFields" },
-    ],
-    customFields: [
-      { id: "modon_wo_resolution_sla", label: "Resolution SLA Status", functionRef: "woAddl", valuePath: "result.fields.resolutionSla",   widgetType: "inline" },
-      { id: "modon_wo_response_sla",   label: "Response SLA Status",   functionRef: "woAddl", valuePath: "result.fields.responseSla",     widgetType: "inline" },
-      { id: "modon_wo_site_outcome",   label: "Site Outcome",          functionRef: "woAddl", valuePath: "result.fields.siteOutcome",     widgetType: "inline" },
-      { id: "modon_wo_threshold",      label: "Threshold Status",      functionRef: "woAddl", valuePath: "result.fields.thresholdStatus", widgetType: "inline" },
-    ],
-    customPhotos: [],
-    customSignatures: [],
-    customTables: [],
-  },
-};
+window.ORG_CUSTOMIZATIONS = {};
