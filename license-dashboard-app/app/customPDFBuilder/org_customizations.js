@@ -1,11 +1,10 @@
 /**
- * ORG CUSTOMIZATIONS — MODON ONLY
+ * ORG CUSTOMIZATIONS
  * ============================================================================
  * User-defined customization layer (NOT the product layer). The product engine
  * and all preset sections (module_customizations.js) are never touched.
  * Loaded by both apps alongside module_customizations.js.
  *
- * This file is currently scoped to the MODON org only. It wires one backend
  * function (see org-configs/modon-backend-functions.md):
  *   workorder → fetchWorkorderAdditionalFields (nameSpace "pdfPrintFetchFunctions")
  *     — returns 4 custom-ENUM display labels under result.fields.
