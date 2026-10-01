@@ -477,7 +477,11 @@ body{
 .task-img-empty{width:100%;max-width:260px;height:100px;border:0.5px dashed #e2e8f0;border-radius:4px}
 @media print{
   .task-table{width:100%!important}
-  .task-img{max-height:60mm!important;width:100%!important;object-fit:contain!important}
+  /* #131 — NO max-height here. This rule used to raise the cap to 60mm (≈227px) on paper only,
+     while the page packer measured the 200px screen cap — so every task photo row printed ~27px
+     taller than planned and the bottom of the page was clipped in print but not on screen
+     (work order 1957476, page 9). A print rule may never change a size the packer measures. */
+  .task-img{width:100%!important;object-fit:contain!important}
   .task-img-pair{display:flex!important}
   .task-img-half{flex:1!important;min-width:0!important}
 }
@@ -654,10 +658,19 @@ tfoot td{padding:8px 11px;border:1px solid var(--pdf-field-border);font-weight:4
 .foot-brand{font-size:11px;font-weight:400;color:var(--pdf-footer-brand)}
 
 /* Rich text / markup inside PDF page: one weight for all visible copy */
+/* #131 — `#pdf-measure-container` is listed beside `.page` because the measurement mirror
+   (§3.2) does not sit inside a `.page`. Scoped to `.page` alone, these rules applied to the
+   printed text but NOT to the text the packer measured: the mirror drew <strong>/<b> and
+   comment bodies BOLD — wider, so wrapped differently from the page that was printed. Any rule
+   that changes the size of document content must reach both, or the two disagree. */
 .page .comment-body,
-.page .comment-body *{font-weight:400!important}
+.page .comment-body *,
+#pdf-measure-container .comment-body,
+#pdf-measure-container .comment-body *{font-weight:400!important}
 .page b,
-.page strong{font-weight:400}
+.page strong,
+#pdf-measure-container b,
+#pdf-measure-container strong{font-weight:400}
 
 /* ── MOBILE — ONLY applies to screen; print/PDF always keeps desktop field widths --- */
 /* #124 — THE DOCUMENT ITSELF NEVER REFLOWS ANY MORE. This block used to restyle the PDF
@@ -768,7 +781,14 @@ tfoot td{padding:8px 11px;border:1px solid var(--pdf-field-border);font-weight:4
     break-after:page;
   }
   .doc-content{flex:1;min-height:0;overflow:hidden}
-  .section{border-bottom:1px solid rgba(148,163,184,0.35)!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  /* #131 — the border is forced on the PAGE-LEVEL sections only (`.doc-content > .section`).
+     As a bare `.section` it also reached the section nested inside each half of a side-by-side
+     pair, which the screen deliberately draws WITHOUT a border
+     (`.section-pair .section-half .section{border-bottom:none}`) — so every pair printed 1px
+     taller than it measured, plus a stray rule under each half. A print rule may only change
+     colours, never a size the packer measured. */
+  .section{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .doc-content > .section{border-bottom:1px solid rgba(148,163,184,0.35)!important}
   .doc-content > .section:last-child{border-bottom:none!important}
   .section-pair{border-bottom:1px solid rgba(148,163,184,0.35)!important}
   .section-pair .section-half{padding-right:14px!important}
@@ -1413,9 +1433,13 @@ tfoot td{padding:8px 11px;border:1px solid var(--pdf-field-border);font-weight:4
   <div id="app" v-cloak>
 
     <!-- Always-present off-screen containers for DOM measurement and mobile PDF capture -->
+    <!-- #131 — the width is the page's REAL content width, written the way the page derives
+         it: 210mm (793.70px) minus the content padding — 721.70px, not a rounded 722px. The
+         0.3px mattered: a line that just fits 722px wraps at 721.70px, so the mirror measured
+         one line fewer than the page then printed. -->
     <div
       ref="measureContainerRef"
-      style="position:absolute;left:-9999px;top:0;width:722px;visibility:hidden;pointer-events:none;overflow:visible;z-index:-1;"
+      style="position:absolute;left:-9999px;top:0;width:calc(210mm - 2 * var(--pdf-content-pad-x, 36px));visibility:hidden;pointer-events:none;overflow:visible;z-index:-1;"
       aria-hidden="true"
       id="pdf-measure-container"
     ></div>
@@ -3826,8 +3850,13 @@ const PDF_CONTENT_BUDGET_SAFETY_PX = 8;
  * here on purpose, since its height is what we are solving for.
  *
  * @param {boolean} headerShowsStatus  whether `headerRecordStatus` will render its third line.
+ * @param {{docType?:string, docId?:string, status?:string, footerContext?:string}} [headerText]
+ *   #131 — the REAL strings the page header and footer will print. Optional: without it the
+ *   probe uses short stand-ins, exactly as before. With it, a module name or status long enough
+ *   to wrap is measured as wrapping — the header grows, the content box shrinks, and the budget
+ *   follows, instead of every page planning against a box ~20px taller than it really is.
  */
-function measurePageContentBudgetPx(headerShowsStatus) {
+function measurePageContentBudgetPx(headerShowsStatus, headerText) {
   if (typeof document === "undefined" || !document.body) {
     // #120 — the implausible-measurement path below already logged; this one did not.
     pdfLogOnce(
@@ -3842,21 +3871,24 @@ function measurePageContentBudgetPx(headerShowsStatus) {
   probe.setAttribute("aria-hidden", "true");
   probe.style.cssText =
     "position:absolute;left:-99999px;top:0;width:794px;visibility:hidden;pointer-events:none;z-index:-1;";
+  const headerStrings = headerText || {};
+  const footerBrandName =
+    (typeof PDF_UI_BRANDING !== "undefined" && PDF_UI_BRANDING.footerBrandName) || "Facilio";
   probe.innerHTML =
     `<div class="page">` +
       `<div class="doc-header doc-header--no-shimmer">` +
         `<div class="header-logo-wrap"></div>` +
         `<div class="header-right">` +
-          `<div class="header-doc-type">Record</div>` +
-          `<div class="header-doc-id"># 0</div>` +
-          (headerShowsStatus ? `<div class="header-status">Status</div>` : ``) +
+          `<div class="header-doc-type">${measureEsc(headerStrings.docType || "Record")}</div>` +
+          `<div class="header-doc-id">${measureEsc(headerStrings.docId || "# 0")}</div>` +
+          (headerShowsStatus ? `<div class="header-status">${measureEsc(headerStrings.status || "Status")}</div>` : ``) +
         `</div>` +
       `</div>` +
       `<div class="doc-content"></div>` +
       `<div class="doc-footer">` +
         `<div class="foot foot-col foot-col--left">Generated: 00/00/0000 00:00 am</div>` +
-        `<div class="foot foot-col foot-col--center"><span class="foot-powered">Powered by - </span><span class="foot-brand">Facilio</span></div>` +
-        `<div class="foot foot-col foot-col--right">Record</div>` +
+        `<div class="foot foot-col foot-col--center"><span class="foot-powered">Powered by - </span><span class="foot-brand">${measureEsc(footerBrandName)}</span></div>` +
+        `<div class="foot foot-col foot-col--right">${measureEsc(headerStrings.footerContext || "Record")}</div>` +
       `</div>` +
     `</div>`;
   document.body.appendChild(probe);
@@ -3908,18 +3940,42 @@ function measurePageContentBudgetPx(headerShowsStatus) {
 const PDF_WEB_FONT_READY_TIMEOUT_MS = 2500;
 
 /**
+ * #131 — every weight of the document font the stylesheet uses. The Google Fonts URL in <head>
+ * serves exactly these three (`wght@400;500;600`); 700 is synthesised from 600 and needs no file.
+ */
+const PDF_WEB_FONT_FAMILY = "Inter";
+const PDF_WEB_FONT_WEIGHTS = ["400", "500", "600"];
+
+/**
  * Block until the web font is usable, or the timeout expires. Safe on every browser: if the
  * Font Loading API is absent it returns immediately, exactly as before #115.
+ *
+ * #131 — EVERY WEIGHT IS REQUESTED EXPLICITLY. A browser downloads a font face only when some
+ * text on the page first needs it, and `document.fonts.ready` only waits for faces ALREADY
+ * downloading. So when the loader screen (400 only) was all that had painted, `ready` resolved
+ * — and `status` read "loaded" — while the 500 and 600 faces had not even been requested. The
+ * first text to need them was the measurement mirror itself, which therefore measured every
+ * label, header and total in the FALLBACK face and the page reflowed when Inter arrived. Asking
+ * for each weight by name closes that: `fonts.load()` starts a missing face and resolves once it
+ * is usable (immediately, when it already is).
  */
 async function waitForPdfWebFontsReady() {
   if (typeof document === "undefined" || !document.fonts || typeof document.fonts.ready?.then !== "function") {
     return;
   }
-  if (document.fonts.status === "loaded") return;
+  const allWeightsLoaded = () =>
+    PDF_WEB_FONT_WEIGHTS.every(weight => {
+      try { return document.fonts.check(`${weight} 12px ${PDF_WEB_FONT_FAMILY}`); } catch (_) { return true; }
+    });
+  if (document.fonts.status === "loaded" && allWeightsLoaded()) return;
   const waitStartedAtMs = Date.now();
   let timedOut = false;
+  const everyWeight = typeof document.fonts.load === "function"
+    ? Promise.all(PDF_WEB_FONT_WEIGHTS.map(weight =>
+        document.fonts.load(`${weight} 12px ${PDF_WEB_FONT_FAMILY}`).catch(() => []))).then(() => document.fonts.ready)
+    : document.fonts.ready;
   await Promise.race([
-    document.fonts.ready,
+    everyWeight,
     new Promise(resolve => setTimeout(() => { timedOut = true; resolve(); }, PDF_WEB_FONT_READY_TIMEOUT_MS)),
   ]);
   const waitedMs = Date.now() - waitStartedAtMs;
@@ -3932,6 +3988,75 @@ async function waitForPdfWebFontsReady() {
   } else {
     pdfLog("info", `Web font ready after ${waitedMs}ms — measuring now (heights depend on the real font, not the fallback).`);
   }
+}
+
+/**
+ * #131 — IMAGES WHOSE HEIGHT COMES FROM THE PICTURE ITSELF.
+ *
+ * Most images in this document sit in a FIXED box (`.att-img-wrap` 160px, the bare 200px tiles,
+ * `.sig-widget__img` 56px, the 48px finding tiles, the 192x144 checklist files), so the picture
+ * inside cannot change a height. These four do not: their height is `auto`, i.e. it comes from
+ * the picture's own aspect ratio, which the browser knows only once the file has loaded. A
+ * measurement taken before that reads the image as 0px tall — a task photo row ~200px short.
+ * Data-URI photos usually load within the frame the measurement waits, which is why this held
+ * in practice and why it would fail on exactly the records with the most and largest photos.
+ */
+const PDF_INTRINSIC_HEIGHT_IMAGE_SELECTOR = "img.task-img, .fv-rich img, .insp-q-rich img, .comment-body img";
+const PDF_IMAGE_SETTLE_TIMEOUT_MS = 4000;
+
+/**
+ * #131 — wait (capped) until every intrinsic-height image under `root` has loaded or failed.
+ * Returns immediately when there is none pending, so a document without such images pays
+ * nothing. A broken image is "settled" too: it lays out the same way on every later pass.
+ */
+async function waitForIntrinsicHeightImagesToSettle(root, timeoutMs = PDF_IMAGE_SETTLE_TIMEOUT_MS) {
+  if (!root || typeof root.querySelectorAll !== "function") return;
+  const pendingImages = [...root.querySelectorAll(PDF_INTRINSIC_HEIGHT_IMAGE_SELECTOR)]
+    .filter(image => !image.complete);
+  if (!pendingImages.length) return;
+  let timedOut = false;
+  await Promise.race([
+    Promise.all(pendingImages.map(image => new Promise(resolve => {
+      if (image.complete) { resolve(); return; }
+      image.addEventListener("load", resolve, { once: true });
+      image.addEventListener("error", resolve, { once: true });
+    }))),
+    new Promise(resolve => setTimeout(() => { timedOut = true; resolve(); }, timeoutMs)),
+  ]);
+  if (timedOut) {
+    pdfLogOnce(
+      "imgsettle:timeout",
+      "warn",
+      `${pendingImages.filter(image => !image.complete).length} image(s) whose height depends on the ` +
+        `picture had not loaded after ${timeoutMs}ms, so they were measured without it (#131). ` +
+        `The page-fit check after rendering will still catch any overflow they cause.`,
+    );
+  }
+}
+
+/**
+ * #131 — the vertical space an element really occupies in its flow: its box PLUS its own
+ * margins. `offsetHeight` excludes margins, and that is how the section header's 12px
+ * `margin-bottom`, the 6px under each Plans/Actuals table label and the 6px under each
+ * Before/After caption all went missing from every slice estimate. Fractional (a rect), so
+ * that summing many of these does not accumulate rounding.
+ */
+function measureOuterHeightPx(element) {
+  if (!element) return null;
+  const style = window.getComputedStyle(element);
+  return element.getBoundingClientRect().height
+    + (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
+}
+
+/**
+ * #131 — an element's exact laid-out height, fractional. `offsetHeight` rounds every row to a
+ * whole pixel, and the packer SUMS rows: thirty 34.25px table rows read 34 each and the slice is
+ * 7.5px short — past the 8px safety margin before anything else goes wrong. The measurement
+ * container is never zoomed or transformed (it sits outside the summary widget's `zoom`), so a
+ * rect is in the same CSS pixels the page lays out in.
+ */
+function measureExactHeightPx(element) {
+  return element ? element.getBoundingClientRect().height : null;
 }
 
 /**
@@ -4117,8 +4242,17 @@ function buildTablePackMeta(planBudget, isFirstTableChunk, rowsInChunk, estH) {
   };
 }
 
-/** Vertical pad included in table slice height estimates (section chrome aside). */
-const PDF_TABLE_SLICE_PAD = 8;
+/**
+ * Vertical pad included in table slice height estimates (section chrome aside).
+ *
+ * #131 — NOW 0, and why it was 8: the section header's 12px `margin-bottom` was never measured
+ * (the header was read with `offsetHeight`, which excludes margins), and this pad was standing in
+ * for it — 4px short on every table slice, and on the fields grid, which never added the pad,
+ * the whole 12px. The header is now measured WITH its margins (`measureOuterHeightPx`), so a pad
+ * on top would double-count. Kept as a named 0 so every chrome formula still reads the same and
+ * the decision is visible where the number used to be.
+ */
+const PDF_TABLE_SLICE_PAD = 0;
 /** .section padding-bottom in CSS — included in slice estimates (conservative vs last-child:0). */
 const PDF_SECTION_PAD_BOTTOM = 16;
 /**
@@ -4226,7 +4360,8 @@ async function fetchUnitOfMeasureValues(lineItemsModule) {
 function buildProbeSectionForChunk(sec, rowsChunk) {
   const t = sec.sectionType;
   if (t === "inspectionChecklist") return { ...sec, checklistItems: rowsChunk };
-  if (t === "lineItems") return { ...sec, lineItemRows: rowsChunk };
+  // #131 — the summary footer is measured once per section (`tableFooter`), never per chunk.
+  if (t === "lineItems") return { ...sec, lineItemRows: rowsChunk, _measureIncludeFooter: false };
   if (t === "customTable" || t === "receivableReceipts" || t === "receivableStocking") return { ...sec, customTableRows: rowsChunk };
   // #87 — the packer splits ONE table at a time and hands `splitTableSectionIntoSlices` a
   // per-table section object whose `woTables` holds exactly that single table (see the packer
@@ -4276,6 +4411,7 @@ async function measureTableChunkMetrics(sec, rowsChunk, ctx) {
   container.appendChild(wrapper);
   renderSectionForMeasurement(buildProbeSectionForChunk(sec, rowsChunk), wrapper, ctx);
 
+  await waitForIntrinsicHeightImagesToSettle(wrapper);   // #131
   await new Promise(r => requestAnimationFrame(r));
   await new Promise(r => requestAnimationFrame(r));
 
@@ -4286,7 +4422,9 @@ async function measureTableChunkMetrics(sec, rowsChunk, ctx) {
   const read = readSectionHeights(sec.sectionType, wrapper);
   const rowHeights = (read.tableRows || []).map((h, i) => h ?? PDF_EST_TABLE_ROW);
   const sumRows = rowHeights.reduce((a, b) => a + b, 0);
-  const tbodyHeight = tbody?.offsetHeight > 0 ? tbody.offsetHeight : sumRows;
+  // #131 — exact, not `offsetHeight`: this is the number a whole page of rows is planned on.
+  const exactTbodyHeight = measureExactHeightPx(tbody);
+  const tbodyHeight = exactTbodyHeight > 0 ? exactTbodyHeight : sumRows;
 
   container.removeChild(wrapper);
   return { tbodyHeight, rowHeights };
@@ -4497,12 +4635,17 @@ function sliceBase(sec, sectionType) {
 }
 
 
-function cloneFieldsSection(sec, normalFields, tableRows) {
+function cloneFieldsSection(sec, normalFields, tableRows, carriesTable = true) {
   return {
     ...sec,
     normalFields: Array.isArray(normalFields) ? normalFields : [...(sec.normalFields || [])],
     table: {
-      columns: [...(sec.table?.columns || [])],
+      // #131 — only the slice that CARRIES the related-records table keeps its columns. The
+      // render draws a table whenever `columns.length` is set, so a grid-only slice that kept
+      // them printed a header and a "No data" row on every page the grid spanned — content the
+      // packer never budgeted. `carriesTable` defaults to true, so every other caller is as
+      // before.
+      columns: carriesTable ? [...(sec.table?.columns || [])] : [],
       rows: Array.isArray(tableRows) ? tableRows : [...(sec.table?.rows || [])],
     },
     isEmpty: false,
@@ -4529,31 +4672,52 @@ function widgetRowH(widgetType) {
   return PDF_EST_FIELD_ROW;
 }
 
-async function splitFieldGridIntoSlices(sec, pageBudget, getTablePlanBudget, measurements) {
+/**
+ * Pack a fields section into slices: the widget grid (rows of cells), then its optional
+ * related-records table.
+ *
+ * #131 — THREE CHANGES, all in the arithmetic that decides where a fields section breaks:
+ *   1. EVERY PART OF THE BOX IS COUNTED. A slice is header (with its margin, and the
+ *      "(continued)" title after the first) + the grid's own border + its rows + the
+ *      section's padding and border below. The old sum was header + rows only — 31px short
+ *      on every fields slice, the largest systematic gap left after #101.
+ *   2. THE FIRST SLICE STARTS ON THE SPACE LEFT, like every table section since #94. It used
+ *      to be sized for a WHOLE page, so a fields section that did not fit what remained of the
+ *      current page moved to the next one in its entirety and left the gap behind it.
+ *      `getTablePlanBudget` (the packer's own planner) decides, with the same widow rule
+ *      every other section obeys. Without a planner (the half-width fallback) every slice is
+ *      sized for a page, exactly as before.
+ *   3. ONLY ONE SLICE PRINTS THE RELATED TABLE, and an empty related list is budgeted: the
+ *      render prints the table's header and a "No data" row, which no estimate contained.
+ *
+ * `appendSliceNow` (packer mode): each slice is placed the moment it is made, so the planning
+ * of the next one — the first table chunk above all — sees the page as it really is.
+ * Without it the slices are only returned, as before (the half-width fallback sums them).
+ */
+async function splitFieldGridIntoSlices(sec, pageBudget, getTablePlanBudget, measurements, appendSliceNow = null) {
   const m = createPackMetrics(measurements);
   const sid = sectionMeasureKey(sec);
   const nf = sec.normalFields || [];
   const cols = sec.table?.columns || [];
   const allRows = sec.table?.rows || [];
-  const headerH = m.sectionHeader();
   const tblHdr = m.tableHeader(sid);
+  const boxBottomH = m.sectionBoxBottom();
+  const gridFrameH = nf.length ? m.fieldGridFrame(sid) : 0;
+  const headerFor = isContinued => m.sectionHeader(sid, isContinued);
   const slices = [];
   let continued = false;
-  let currentSliceFields = [];
-  let usedH = headerH;
-  let rowAccum = 0;
-  let currentRowMaxH = 0;
 
-  function pushSlice(fields, tableRows, estH, packDebug) {
-    if (!fields.length && !tableRows.length) return;
+  function pushSlice(fields, tableRows, estH, packDebug, carriesTable = tableRows.length > 0) {
+    if (!fields.length && !tableRows.length && !carriesTable) return;
     const entry = {
       ...sliceBase(sec, "fields"),
       continued,
-      sec: cloneFieldsSection(sec, fields, tableRows),
+      sec: cloneFieldsSection(sec, fields, tableRows, carriesTable),
       estH,
     };
     if (packDebug) entry._packDebug = packDebug;
     slices.push(entry);
+    if (typeof appendSliceNow === "function") appendSliceNow(entry, estH);
     continued = true;
   }
 
@@ -4565,12 +4729,15 @@ async function splitFieldGridIntoSlices(sec, pageBudget, getTablePlanBudget, mea
     measurements?.measureCtx,
   );
   const resolveTablePlanBudget = async (chromeH, rowIdx) => {
-    const minRowH = fieldTableChunkMeasurer
-      ? await fieldTableChunkMeasurer.minRowH(rowIdx)
-      : m.tableRowH(sid, rowIdx);
-    const minChrome = chromeH + minRowH;
+    // #131 — the next one and two rows decide where a table may START (#101's rule for every
+    // other table), not the worst row anywhere below, which made a later tall row refuse space
+    // the next short rows fit in.
+    const leadingRows = fieldTableChunkMeasurer
+      ? await fieldTableChunkMeasurer.leadingRowHeights(rowIdx)
+      : { first: m.tableRowH(sid, rowIdx), second: m.tableRowH(sid, rowIdx + 1) };
+    const minChrome = chromeH + leadingRows.first;
     if (typeof getTablePlanBudget === "function") {
-      return getTablePlanBudget(tableSliceContinued(), minChrome, "fields");
+      return getTablePlanBudget(tableSliceContinued(), minChrome, "fields", leadingRows.first, leadingRows.second);
     }
     return pageBudget;
   };
@@ -4603,103 +4770,89 @@ async function splitFieldGridIntoSlices(sec, pageBudget, getTablePlanBudget, mea
     return constantEstimate;
   }
 
-  // #101 — the row being accumulated is held SEPARATELY from the rows already committed to
-  // the current slice. It has to be: `closeRow` decides whether the completed row still fits,
-  // and if it does not, that row must open the NEXT slice. The previous version kept one flat
-  // list and pushed it wholesale including the row that had just overflowed, so a fields slice
-  // could exceed the budget by a full row (~149px with wrapped values) — content that
-  // `.doc-content{overflow:hidden}` then clipped. Splitting the two lists is what lets the
-  // overflowing row carry forward instead.
-  let currentRowFields = [];
-
-  function closeRow() {
-    if (rowAccum <= 0) return;
-    const rowH = rowHeightFor(currentRowMaxH);
-    if (currentSliceFields.length > 0 && usedH + rowH > pageBudget) {
-      // Commit what already fits, and let this row start the next slice.
-      pushSlice([...currentSliceFields], [], usedH);
-      currentSliceFields = [...currentRowFields];
-      usedH = headerH + rowH;
-    } else {
-      // Fits — or this row is alone and oversized, in which case it is placed anyway
-      // (a single grid row cannot be split, and dropping it would lose content).
-      currentSliceFields.push(...currentRowFields);
-      usedH += rowH;
+  // Step 1 — group the cells into the grid's flex rows, in the order the browser lays them out
+  // (the same grouping as before #131; it is what makes row N here measured row N there).
+  const gridRows = [];
+  {
+    let rowAccum = 0;
+    let rowFields = [];
+    let rowConstantMaxH = 0;
+    const closeGridRow = () => {
+      if (rowAccum <= 0) return;
+      gridRows.push({ fields: rowFields, h: rowHeightFor(rowConstantMaxH) });
+      rowFields = [];
+      rowAccum = 0;
+      rowConstantMaxH = 0;
+    };
+    for (const cell of nf) {
+      const wt = cell.widgetType || "4col";
+      const frac = widgetRowHeightFraction(wt);
+      const wh = widgetRowH(wt);
+      if (rowAccum > 0 && rowAccum + frac > 1.001) closeGridRow();
+      rowConstantMaxH = rowAccum === 0 ? wh : Math.max(rowConstantMaxH, wh);
+      rowFields.push(cell);
+      rowAccum += frac;
+      if (rowAccum >= 0.999) closeGridRow();
     }
-    currentRowFields = [];
-    rowAccum = 0;
-    currentRowMaxH = 0;
+    closeGridRow();
   }
 
-  for (const cell of nf) {
-    const wt = cell.widgetType || "4col";
-    const frac = widgetRowHeightFraction(wt);
-    const wh = widgetRowH(wt);
-
-    if (rowAccum > 0 && rowAccum + frac > 1.001) {
-      closeRow();
+  // Step 2 — pack the rows. A grid slice is header + grid frame + its rows + the box below.
+  const gridSliceEstH = (isContinued, rowsH) => headerFor(isContinued) + gridFrameH + rowsH + boxBottomH;
+  let pendingFields = [];
+  let pendingRowsH = 0;
+  if (gridRows.length) {
+    // #101 — the row being accumulated is held SEPARATELY from the rows already committed to
+    // the slice, so the row that does not fit OPENS the next slice instead of overflowing this
+    // one (a whole ~149px row past the box, before #101).
+    let sliceBudget = pageBudget;
+    if (typeof getTablePlanBudget === "function") {
+      const firstRowH = gridRows[0].h;
+      const secondRowH = gridRows.length > 1 ? gridRows[1].h : firstRowH;
+      sliceBudget = getTablePlanBudget(false, gridSliceEstH(false, firstRowH), "fields", firstRowH, secondRowH);
     }
-
-    if (rowAccum === 0) {
-      currentRowMaxH = wh;
-    } else {
-      currentRowMaxH = Math.max(currentRowMaxH, wh);
-    }
-    currentRowFields.push(cell);
-    rowAccum += frac;
-
-    if (rowAccum >= 0.999) {
-      closeRow();
+    let rowIndex = 0;
+    while (rowIndex < gridRows.length) {
+      const row = gridRows[rowIndex];
+      if (pendingFields.length && gridSliceEstH(continued, pendingRowsH + row.h) > sliceBudget) {
+        // Commit what fits; this row starts the next slice, which begins a fresh page.
+        pushSlice(pendingFields, [], gridSliceEstH(continued, pendingRowsH), null, false);
+        pendingFields = [];
+        pendingRowsH = 0;
+        sliceBudget = pageBudget;
+        continue;
+      }
+      // Fits — or this row is alone and oversized, in which case it is placed anyway (a single
+      // grid row cannot be split, and dropping it would lose content; appendSlice reports it).
+      pendingFields.push(...row.fields);
+      pendingRowsH += row.h;
+      rowIndex++;
     }
   }
-  if (rowAccum > 0) closeRow();
 
-  let pendingFields = [...currentSliceFields];
-  let pendingUsed = usedH;
-
+  // Step 3 — the related-records table, if the section has one.
   if (!cols.length) {
-    const rows = allRows;
-    const tableBodyH = rows.length && fieldTableChunkMeasurer
-      ? await fieldTableChunkMeasurer.bodyHeight(0, rows.length)
-      : m.sumTableRows(sid, 0, rows.length);
-    const tableH = rows.length
-      ? tblHdr + tableBodyH + PDF_TABLE_SLICE_PAD + PDF_SECTION_BOX_BOTTOM
-      : 0;
-    if (pendingFields.length) {
-      const est = pendingUsed + tableH;
-      pushSlice(
-        pendingFields,
-        rows,
-        est,
-        rows.length ? tablePackMeta(rows.length, est, await resolveTablePlanBudget(tblHdr + PDF_TABLE_SLICE_PAD, 0)) : null,
-      );
-    } else if (!slices.length) {
-      const est = headerH + (tableH || 12);
-      pushSlice(
-        nf,
-        rows,
-        est,
-        rows.length ? tablePackMeta(rows.length, est, await resolveTablePlanBudget(tblHdr + PDF_TABLE_SLICE_PAD, 0)) : null,
-      );
+    if (pendingFields.length || !slices.length) {
+      pushSlice(pendingFields.length ? pendingFields : nf, [], gridSliceEstH(continued, pendingRowsH), null, false);
     }
     return slices;
   }
 
   if (!allRows.length) {
+    // Columns but no rows: the render prints the table header and one "No data" row.
+    const emptyTableH = tblHdr + m.tableEmptyRow(sid);
     if (pendingFields.length) {
-      pushSlice(pendingFields, [], pendingUsed);
-    } else if (!slices.length) {
-      pushSlice(nf, [], Math.max(pendingUsed, headerH + 12));
+      pushSlice(pendingFields, [], gridSliceEstH(continued, pendingRowsH) + emptyTableH, null, true);
+    } else {
+      pushSlice([], [], headerFor(continued) + emptyTableH + boxBottomH, null, true);
     }
     return slices;
   }
 
-  const tableOnlyChrome = () => headerH + tblHdr + PDF_TABLE_SLICE_PAD + PDF_SECTION_BOX_BOTTOM;
-
   async function pushTableOnlyChunks(fromIdx) {
     let idx = fromIdx;
     while (idx < allRows.length) {
-      const chrome = tableOnlyChrome();
+      const chrome = headerFor(continued) + tblHdr + PDF_TABLE_SLICE_PAD + boxBottomH;
       const plan = await resolveTablePlanBudget(chrome, idx);
       const { count, estH } = await planTableRowChunk(
         m,
@@ -4712,19 +4865,19 @@ async function splitFieldGridIntoSlices(sec, pageBudget, getTablePlanBudget, mea
         fieldTableChunkMeasurer,
       );
       const chunk = allRows.slice(idx, idx + count);
-      pushSlice([], chunk, estH, tablePackMeta(chunk.length, estH, plan));
+      pushSlice([], chunk, estH, tablePackMeta(chunk.length, estH, plan), true);
       tableChunksPlanned++;
       idx += count;
     }
   }
 
-  if (!pendingFields.length && slices.length) {
+  if (!pendingFields.length) {
     await pushTableOnlyChunks(0);
     return slices;
   }
 
-  const gridH = pendingUsed;
-  const gridTableChrome = gridH + tblHdr + PDF_TABLE_SLICE_PAD + PDF_SECTION_BOX_BOTTOM;
+  // The grid's last slice and the table's first chunk share one slice.
+  const gridTableChrome = gridSliceEstH(continued, pendingRowsH) + tblHdr + PDF_TABLE_SLICE_PAD;
   const firstPlan = await resolveTablePlanBudget(gridTableChrome, 0);
   const { count: firstCount, estH: firstEst } = await planTableRowChunk(
     m,
@@ -4736,29 +4889,15 @@ async function splitFieldGridIntoSlices(sec, pageBudget, getTablePlanBudget, mea
     0,
     fieldTableChunkMeasurer,
   );
-
-  if (firstCount < 1) {
-    if (pendingFields.length) {
-      pushSlice(pendingFields, [], pendingUsed);
-    }
-    await pushTableOnlyChunks(0);
-    return slices;
-  }
-
-  if (firstCount >= allRows.length) {
-    pushSlice(pendingFields, allRows, firstEst, tablePackMeta(allRows.length, firstEst, firstPlan));
-    tableChunksPlanned++;
-    return slices;
-  }
-
   pushSlice(
     pendingFields,
     allRows.slice(0, firstCount),
     firstEst,
-    tablePackMeta(firstCount, firstEst, firstPlan),
+    tablePackMeta(Math.min(firstCount, allRows.length), firstEst, firstPlan),
+    true,
   );
   tableChunksPlanned++;
-  await pushTableOnlyChunks(firstCount);
+  if (firstCount < allRows.length) await pushTableOnlyChunks(firstCount);
   return slices;
 }
 
@@ -5382,22 +5521,59 @@ function readFieldGridRowHeights(container) {
   let currentRowTop = null;
   for (const cell of cells) {
     const cellTop = cell.offsetTop;
+    // #131 — exact (fractional) heights: rows are SUMMED by the packer, so whole-pixel rounding
+    // would accumulate down the grid. Grouping still uses `offsetTop`, which only has to tell
+    // one flex line from the next.
+    const cellHeight = measureExactHeightPx(cell);
     // 1px tolerance: sub-pixel layout can put nominally-aligned cells a fraction apart.
     if (currentRowTop === null || cellTop > currentRowTop + 1) {
-      rowHeights.push(cell.offsetHeight);
+      rowHeights.push(cellHeight);
       currentRowTop = cellTop;
     } else {
       const lastIndex = rowHeights.length - 1;
-      rowHeights[lastIndex] = Math.max(rowHeights[lastIndex], cell.offsetHeight);
+      rowHeights[lastIndex] = Math.max(rowHeights[lastIndex], cellHeight);
     }
   }
   return rowHeights;
 }
 
+/**
+ * #131 — the vertical frame of a box: border + padding, top and bottom. The fields grid draws a
+ * 1px border round all its cells, which no row height contains and no estimate added.
+ */
+function measureVerticalFramePx(element) {
+  if (!element) return null;
+  const style = window.getComputedStyle(element);
+  return (parseFloat(style.borderTopWidth) || 0) + (parseFloat(style.borderBottomWidth) || 0)
+    + (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+}
+
+/**
+ * #131 — everything a table draws that is NOT a body row: its header row(s), plus the outer
+ * half of its collapsed border. With `border-collapse:collapse` each row's box runs from the
+ * middle of the border above it to the middle of the border below, so the rows (and the
+ * <thead>) add up to the table's height MINUS the outer half-borders — 1px on a 1px border.
+ * The header used to be read as `<thead>` alone, which made every table slice 1px short
+ * (1.5px on SLA). Reading it as "table minus its bodies and footer" is exact by construction:
+ * chrome + body rows + footer = the table, whatever the borders.
+ */
+function measureTableChromePx(table) {
+  if (!table) return null;
+  const bodiesHeight = [...table.tBodies].reduce((sum, body) => sum + measureExactHeightPx(body), 0);
+  const footerHeight = table.tFoot ? measureExactHeightPx(table.tFoot) : 0;
+  return measureExactHeightPx(table) - bodiesHeight - footerHeight;
+}
+
 function readSectionHeights(sectionType, container) {
   const elementsFor = attr => [...container.querySelectorAll(`[data-mh="${attr}"]`)];
-  const get = attr => elementsFor(attr).map(el => el.offsetHeight);
-  const first = attr => container.querySelector(`[data-mh="${attr}"]`)?.offsetHeight ?? null;
+  // #131 — the table chrome, from the table that carries the `data-mh="table-header"` marker.
+  const tableChromeFor = () => {
+    const headerElement = container.querySelector('[data-mh="table-header"]');
+    return headerElement ? measureTableChromePx(headerElement.closest("table")) : null;
+  };
+  // #131 — exact (fractional) heights throughout; see `measureExactHeightPx`.
+  const get = attr => elementsFor(attr).map(el => measureExactHeightPx(el));
+  const first = attr => measureExactHeightPx(container.querySelector(`[data-mh="${attr}"]`)) ?? null;
   // #101 — every section whose row units are separate boxes reports its own inter-row
   // spacing; `createPackMetrics` defaults it to 0, so a section that omits it is unchanged.
   const spacingBetween = attr => measureRowUnitSpacing(elementsFor(attr));
@@ -5405,12 +5581,16 @@ function readSectionHeights(sectionType, container) {
   switch (sectionType) {
     case "fields":
       return {
-        total: container.querySelector(".section")?.offsetHeight ?? null,
+        total: measureExactHeightPx(container.querySelector(".section")) ?? null,
         fieldGrid: first("field-grid") ?? 0,
         // #101 — the measured grid rows the packer now sizes its slices from.
         fieldRows: readFieldGridRowHeights(container),
-        tableHeader: first("table-header") ?? 0,
+        // #131 — the grid's own border, which sits around the rows and inside no row.
+        fieldGridFrame: measureVerticalFramePx(container.querySelector('[data-mh="field-grid"]')) ?? 0,
+        tableHeader: tableChromeFor() ?? 0,
         tableRows: get("table-row"),
+        // #131 — the "No data" row the render prints when the related table has columns but no rows.
+        tableEmptyRow: first("table-empty-row") ?? 0,
       };
     case "comments": {
       // #94: explicit tableHeader 0 — comments renders no table header, and the shared
@@ -5444,6 +5624,8 @@ function readSectionHeights(sectionType, container) {
     }
     case "tasks":
       return {
+        // #131 — measured; this used to fall back to the 34px PDF_EST_TABLE_HEADER constant.
+        tableHeader: tableChromeFor() ?? undefined,
         sectionRows: get("task-section-row"),
         bodyRows: get("task-body-row"),
         imgRows: get("task-img-row"),
@@ -5456,12 +5638,18 @@ function readSectionHeights(sectionType, container) {
     case "workorderPlans":
     case "workorderActuals":
       return {
-        tableHeader: first("table-header") ?? 0,
+        tableHeader: tableChromeFor() ?? 0,
         tableRows: get("table-row"),
         // Per-table label sits above each table and is chrome, not a row — the packer adds it
         // to the slice chrome via `extraChromeH` so a split table accounts for it on every
         // continuation slice, where the section header is hidden but the label still renders.
-        woTableLabel: first("wo-table-label") ?? 0,
+        // #131 — WITH its 6px margin-bottom (`.wo-table-label`), which `offsetHeight` dropped.
+        woTableLabel: measureOuterHeightPx(container.querySelector('[data-mh="wo-table-label"]')) ?? 0,
+        // #131 — PER TABLE: Items, Tools, Services, Labour and Misc each have their own columns,
+        // so their header rows (and labels) can wrap to different heights. The first table's
+        // numbers stood in for all five.
+        woTableLabels: elementsFor("wo-table-label").map(label => measureOuterHeightPx(label)),
+        woTableChromes: [...container.querySelectorAll('[data-mh="table-header"]')].map(head => measureTableChromePx(head.closest("table"))),
       };
     case "attachments":
     case "otherAttachments":
@@ -5471,11 +5659,42 @@ function readSectionHeights(sectionType, container) {
         gridRows: get("attachment-grid-row"),
         rowSpacing: spacingBetween("attachment-grid-row"),
       };
-    case "woPhotos":
+    case "woPhotos": {
       // #94: see the comments note — no table header here either.
-      return { tableHeader: 0, photoRows: get("ba-photo-row"), rowSpacing: spacingBetween("ba-photo-row") };
-    case "inspectionChecklist":
-      return { tableHeader: 0, tableRows: get("table-row"), rowSpacing: spacingBetween("table-row") };
+      // #131 — the mirror now draws the REAL layout: one Before column and one After column,
+      // each a caption over a stack of photo cells (photo + file name + time). The packer's row
+      // unit is still the pair INDEX, so row i is the taller of the two cells at index i — the
+      // sum of those is never less than the taller column, which is what the page really
+      // draws. The stack's gap is the spacing between rows, and the caption (with its margin)
+      // is chrome that every slice repeats.
+      const photoRows = [];
+      for (const cell of elementsFor("ba-photo-cell")) {
+        const pairIndex = Number(cell.getAttribute("data-pair-index")) || 0;
+        photoRows[pairIndex] = Math.max(photoRows[pairIndex] || 0, measureExactHeightPx(cell));
+      }
+      for (let pairIndex = 0; pairIndex < photoRows.length; pairIndex++) photoRows[pairIndex] = photoRows[pairIndex] || 0;
+      const photoStack = container.querySelector(".ba-photo-stack");
+      return {
+        tableHeader: 0,
+        photoRows,
+        rowSpacing: photoStack ? (parseFloat(window.getComputedStyle(photoStack).rowGap) || 0) : 0,
+        subHeaderBlock: measureOuterHeightPx(container.querySelector('[data-mh="ba-subhdr"]')),
+      };
+    }
+    case "inspectionChecklist": {
+      // #131 — page and section headers carry their OWN `margin:4px 0`; questions carry none.
+      // `measureRowUnitSpacing` reads the FIRST row's margin and applies it to every gap, so a
+      // slice that began with a header over-counted every gap, and one that began with a
+      // question did not count the 8px around each header inside it at all (the clipping
+      // direction). So here each row is measured with its own margins, and the spacing is the
+      // list's flex gap alone. The list is a flex column, so margins add and never collapse.
+      const checklist = container.querySelector(".insp-checklist");
+      return {
+        tableHeader: 0,
+        tableRows: elementsFor("table-row").map(row => measureOuterHeightPx(row)),
+        rowSpacing: checklist ? (parseFloat(window.getComputedStyle(checklist).rowGap) || 0) : 0,
+      };
+    }
     case "inspectionFindings":
       return { tableHeader: 0, tableRows: get("finding-row"), rowSpacing: spacingBetween("finding-row") };
     // #109 — strips are separate boxes stacked by the page packer, so their inter-row spacing
@@ -5502,35 +5721,38 @@ function readSectionHeights(sectionType, container) {
     case "receivableReceipts":
     case "receivableStocking":
       return {
-        total: container.querySelector(".section")?.offsetHeight ?? null,
-        tableHeader: first("table-header") ?? 0,
+        total: measureExactHeightPx(container.querySelector(".section")) ?? null,
+        tableHeader: tableChromeFor() ?? 0,
         tableRows: get("table-row"),
         tableFooter: first("table-footer") ?? 0,
       };
     case "assetLocation":
       if (container.querySelector('[data-mh="table-row"]')) {
         return {
-          total: container.querySelector(".section")?.offsetHeight ?? null,
-          tableHeader: first("table-header") ?? 0,
+          total: measureExactHeightPx(container.querySelector(".section")) ?? null,
+          tableHeader: tableChromeFor() ?? 0,
           tableRows: get("table-row"),
         };
       }
-      return { total: container.offsetHeight };
+      return { total: measureExactHeightPx(container) };
     // #99 — Bill To / Ship To: a fixed label/value block of at most 5 rows, measured whole
     // (never row-split; 5 rows cannot exceed a page). Same shape as timeDetails below.
+    // #131 — inspectionScore joins them: it had no mirror at all and was packed at a flat
+    // header + 110px, which a tile whose label wraps exceeds.
     case "billToAddress":
     case "shipToAddress":
     case "timeDetails":
-      return { total: container.offsetHeight };
+    case "inspectionScore":
+      return { total: measureExactHeightPx(container) };
     case "pair":
       // #101 — `halfTotals` are the two halves' REAL heights, measured side by side in the
       // pair's own layout (where `.section-pair .section-half` narrows the field grid to
       // half width, so values wrap differently than they would full width). The packer used
       // to size a pair from `computeHalfSectionHeight`'s constant estimates instead, which
       // is why a `timeDetails` half was budgeted at its declared 260px against a real ~172px.
-      return { total: container.offsetHeight, halfTotals: get("pair-half") };
+      return { total: measureExactHeightPx(container), halfTotals: get("pair-half") };
     default:
-      return { total: container.offsetHeight };
+      return { total: measureExactHeightPx(container) };
   }
 }
 
@@ -5574,7 +5796,24 @@ function createPackMetrics(measurements) {
   return {
     budget,
     heights,
-    sectionHeader: () => heights._sectionHeader ?? PDF_EST_SECTION_HEADER,
+    /**
+     * #131 — the vertical space THIS section's header takes, margins included, measured from the
+     * section's own title — and, for a continuation slice, from its "(continued)" title, which
+     * is twelve characters longer and can wrap where the plain title does not. Falls back to
+     * the first header measured in the document, then to the constant. Called with no
+     * arguments it behaves exactly as before #131 (the document-wide value).
+     */
+    sectionHeader: (id, continued = false) => {
+      const own = id != null ? heights[id] : null;
+      const ownHeader = continued ? (own?.headerBlockContinued ?? own?.headerBlock) : own?.headerBlock;
+      return ownHeader ?? heights._sectionHeader ?? PDF_EST_SECTION_HEADER;
+    },
+    /** #131 — `.section`'s own padding-bottom + border-bottom, measured; the constant if not. */
+    sectionBoxBottom: () => heights._sectionBoxBottom ?? PDF_SECTION_BOX_BOTTOM,
+    /** #131 — the fields grid's own top+bottom border (and padding), measured per section. */
+    fieldGridFrame: id => heights[id]?.fieldGridFrame ?? 2,
+    /** #131 — the "No data" row a fields section's related table prints when it has no rows. */
+    tableEmptyRow: id => heights[id]?.tableEmptyRow ?? PDF_EST_TABLE_ROW,
     h,
     avgTableRow,
     tableRowH,
@@ -5695,11 +5934,22 @@ function buildInspectionMatrixRowMeasurementHtml(it) {
   return h;
 }
 
+/**
+ * #131 §3.2 — the 'question-attachments' Vue branch, element for element. Three divergences
+ * removed, two of them in the clipping direction: an inline `padding:0 10px 8px` that the
+ * render does not have (`.insp-q-body` is `padding:8px 10px`, so every row measured 8px short);
+ * a hardcoded ":" after the label that the CSS `::after` already adds ("Photos::"); and every
+ * file drawn as a 192x144 image even when the render draws a small text chip for it.
+ */
 function buildInspectionAttachmentsMeasurementHtml(it) {
-  let h = `<div class="insp-q-body" data-mh="table-row" style="padding:0 10px 8px">`;
-  h += `<div class="insp-ans-label">${measureEsc(it.attachmentLabel || "Attachments")}:</div>`;
+  let h = `<div class="insp-q-body" data-mh="table-row">`;
+  h += `<div class="insp-ans-label">${measureEsc(it.attachmentLabel ?? "")}</div>`;
   h += `<div class="insp-files">`;
-  for (let i = 0; i < (it.attachments || []).length; i++) h += `<div class="insp-file-img"></div>`;
+  for (const file of (it.attachments || [])) {
+    h += file && file.base64
+      ? `<img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="insp-file-img" alt="" />`
+      : `<span class="insp-file-chip">${measureEsc((file && file.fileName) || "File")}</span>`;
+  }
   h += `</div></div>`;
   return h;
 }
@@ -5886,8 +6136,25 @@ function buildInspectionFindingBlockMeasurementHtml(finding, flags) {
 
 function renderSectionForMeasurement(sec, container, ctx) {
   const type = sec.sectionType;
-  const title = sec.sectionName || type || "";
+  // #131 — the title the render prints: `sliceTitle` falls back to "Section", not the type name.
+  const title = sec.sectionName || "Section";
   let html = measureSectionHeaderHtml(title);
+  // #131 — THE MIRROR'S FORMATTERS ARE THE RENDER'S. `ctx` is built inside setup(), so it can
+  // carry the very functions the template calls (`formatDate`, `formatAttachmentTime`,
+  // `formatHMSParts`, `converttoduration`, `isEmpty`, `woCostTotalFormatted`). Every string the
+  // page prints is therefore printed here character for character, instead of a "same-width"
+  // placeholder: in an auto-width table the placeholder changed the column widths, and in Time
+  // Details it stood in for lines the mirror never drew at all. The fallbacks below only run
+  // where no ctx formatter exists (the offline stress harness), and keep the old placeholders.
+  const measureFormatDate = (typeof ctx?.formatDate === "function")
+    ? ctx.formatDate
+    : (value, onlyDate, onlyTime) => (value == null || value === "" ? "—" : onlyDate ? "00/00/0000" : onlyTime ? "00:00 pm" : "00/00/0000 00:00 pm");
+  const measureFormatAttachmentTime = (typeof ctx?.formatAttachmentTime === "function")
+    ? ctx.formatAttachmentTime
+    : item => (item && (item.uploadedTime || item.createdTime || item.sysCreatedTime) ? "00/00/0000 00:00 PM" : "");
+  const measureConvertToDuration = (typeof ctx?.converttoduration === "function")
+    ? ctx.converttoduration
+    : () => "00 mins 00 secs";
 
   if (type === "pair") {
     // §3.2 / #101 — a pair has NO section header of its own: the Vue template renders
@@ -5898,21 +6165,30 @@ function renderSectionForMeasurement(sec, container, ctx) {
     // renders. Reopen the wrapper without one. The halves' own headers still carry
     // `data-mh="section-header"`, so `measureSectionHeights` can still read a header height.
     const pairClass = sec.lonePair ? "section-pair section-pair--lone" : "section-pair";
-    html = `<div class="section">`;
-    html += `<div class="${pairClass}" data-mh="section-total">`;
+    // #131 — the structure is now the render's exactly: `.section-pair > .section-half >
+    // .section`. It used to wrap the pair in an extra `.section` (whose padding and border made
+    // every pair measure 17px taller than it renders) and to nest a second `.section` inside
+    // each half (height-neutral only because a CSS rule happened to zero both).
+    html = `<div class="${pairClass}" data-mh="section-total">`;
     for (const half of [sec.left, sec.right]) {
       if (!half) continue;
       // #101 — `data-mh="pair-half"` is a MEASUREMENT MARKER ONLY (no class, no style, no
       // element), so the markup and its height are byte-identical to before (§3.2 unaffected).
       // It lets `readSectionHeights` hand the packer each half's REAL height, which is what
       // finally frees the pair branch from `computeHalfSectionHeight`'s constant estimates.
-      html += `<div class="section-half" data-mh="pair-half"><div class="section">`;
+      html += `<div class="section-half" data-mh="pair-half">`;
       const inner = document.createElement("div");
-      renderSectionForMeasurement(half, inner, ctx);
-      html += inner.innerHTML;
-      html += `</div></div>`;
+      // #131 §3.2 — a half-width fields section prints its GRID only: the pair template has no
+      // related-records table branch, so the mirror must not measure one either.
+      // (The template also renders a half with NO sectionType as fields; so does this.)
+      const halfAsRendered = half.sectionType === "fields" || !half.sectionType
+        ? { ...half, sectionType: "fields", table: { columns: [], rows: [] } }
+        : half;
+      renderSectionForMeasurement(halfAsRendered, inner, ctx);
+      html += inner.innerHTML;   // already `<div class="section">…</div>`
+      html += `</div>`;
     }
-    html += `</div></div>`;
+    html += `</div>`;
     container.innerHTML = html;
     return;
   }
@@ -5963,12 +6239,22 @@ function renderSectionForMeasurement(sec, container, ctx) {
           // height does not depend on which picture is inside it. The `v-if` below is the
           // render's condition character for character — if one changes, change both.
           const showsImage = cell.isPresetImage && cell.displayValue && cell.displayValue !== "—";
+          // #131 §3.2 — the render's branch order, all four of them: image → preset error (a
+          // 600-weight span, wider than body text, so it wraps differently) → rich text → the
+          // plain value printed exactly as `{{ cell.displayValue }}` prints it (nothing for a
+          // null, not a dash — a dash measured a line the render does not draw).
           const fvInner = showsImage
             ? `<div class="att-img-wrap"><img class="att-img" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" /></div>`
-            : (cell.isRichText && cell.richHTML
-                ? `<div class="fv-rich">${cell.richHTML}</div>`
-                : measureEsc(cell.displayValue ?? "—"));
-          html += `<div class="fl">${measureEsc(cell.label)}</div><div class="fv">${fvInner}</div>`;
+            : cell.isPresetError
+              ? `<span style="color:#dc2626;font-weight:600">${measureEsc(cell.displayValue ?? "")}</span>`
+              : (cell.isRichText && cell.richHTML
+                  ? `<div class="fv-rich">${cell.richHTML}</div>`
+                  : measureEsc(cell.displayValue ?? ""));
+          // #131 — and the render's `empty` class (italic, so a different width), on the same
+          // condition: `!cell.isPresetImage && isEmpty(cell.value)`.
+          const fvClass = !cell.isPresetImage && typeof ctx?.isEmpty === "function" && ctx.isEmpty(cell.value)
+            ? "fv empty" : "fv";
+          html += `<div class="fl">${measureEsc(cell.label)}</div><div class="${fvClass}">${fvInner}</div>`;
         } else if (cell.isPlaceholder) {
           html += `<div class="fl fc-ph-fl">&nbsp;</div><div class="fv fc-ph-fv">&nbsp;</div>`;
         }
@@ -5989,6 +6275,12 @@ function renderSectionForMeasurement(sec, container, ctx) {
           html += `<td>${measureEsc(v ?? "—")}</td>`;
         }
         html += `</tr>`;
+      }
+      // #131 §3.2 — the render prints a "No data" row when the table has columns but no rows;
+      // the mirror printed nothing, so a fields section with an empty related list was packed
+      // a whole row (and its header) short.
+      if (!rows.length) {
+        html += `<tr data-mh="table-empty-row"><td colspan="${cols.length}" style="color:#94a3b8;font-style:italic">No data</td></tr>`;
       }
       html += `</tbody></table></div>`;
     }
@@ -6024,24 +6316,27 @@ function renderSectionForMeasurement(sec, container, ctx) {
       }
       return gridHtml + `</div>`;
     };
-    // Formatted-width placeholder for the timestamp: the real formatter lives inside setup()
-    // and is out of this top-level function's scope. Only the line's height matters.
-    const buildCommentMetaHtml = (author, isReply) =>
-      `<div class="comment-meta"><div class="avatar${isReply ? " av2" : ""}">${measureEsc((author || "U").slice(0, 2))}</div>`
+    // #131 — the real timestamp and initials (ctx carries the render's own formatters), not a
+    // placeholder: the meta row is a flex line whose name can wrap against the time beside it.
+    const buildCommentMetaHtml = (author, createdTime, isReply) =>
+      `<div class="comment-meta"><div class="avatar${isReply ? " av2" : ""}">${measureEsc(typeof ctx?.initials === "function" ? ctx.initials(author || "U") : (author || "U").slice(0, 2))}</div>`
       + `<div class="cuser">${measureEsc(author || "Unknown")}</div>`
-      + `<div class="cdot"></div><div class="ctime">0000-00-00 00:00</div></div>`;
+      + `<div class="cdot"></div><div class="ctime">${measureEsc(measureFormatDate(createdTime))}</div></div>`;
 
     html += `<div class="comments-list">`;
     for (const comment of ctx.commentsList || []) {
-      html += `<div class="comment-card" data-mh="comment-card"><div class="comment-body">${comment.bodyHTML || measureEsc(comment.body || "—")}</div>`;
+      // #131 §3.2 — the body exactly as the render injects it (`v-html="bodyHTML || body || '—'"`),
+      // unescaped: escaping a plain-text body made the mirror measure different text whenever
+      // the body held a `<` or an `&`.
+      html += `<div class="comment-card" data-mh="comment-card"><div class="comment-body">${comment.bodyHTML || comment.body || "—"}</div>`;
       html += buildCommentImageGridHtml(comment.attachments);
-      html += buildCommentMetaHtml(comment.createdBy?.name, false);
+      html += buildCommentMetaHtml(comment.createdBy?.name, comment.createdTime, false);
       if (comment.children?.length) {
         html += `<div class="replies">`;
         for (const reply of comment.children) {
-          html += `<div class="reply-card"><div class="comment-body">${reply.bodyHTML || measureEsc(reply.body || "—")}</div>`;
+          html += `<div class="reply-card"><div class="comment-body">${reply.bodyHTML || reply.body || "—"}</div>`;
           html += buildCommentImageGridHtml(reply.attachments);
-          html += buildCommentMetaHtml(reply.createdBy?.name, true);
+          html += buildCommentMetaHtml(reply.createdBy?.name, reply.createdTime, true);
           html += `</div>`;
         }
         html += `</div>`;
@@ -6067,14 +6362,19 @@ function renderSectionForMeasurement(sec, container, ctx) {
       const row = imgs.slice(i, i + colCount);
       html += `<div class="${gridClass}" data-mh="attachment-grid-row" style="margin-bottom:10px">`;
       for (const img of row) {
-        const src = img.base64 || img.fileUrl || img.originalUrl || "";
+        // #131 §3.2 — each cell is now the render's cell exactly. The generic Attachments tile
+        // prints a TIMESTAMP under its file name (`formatAttachmentTime(img)`), which this
+        // mirror never drew: every grid row measured ~21px short. Other Attachments prints its
+        // file name WITHOUT a fallback and its time with the real formatter. An empty string
+        // still emits its (zero-height) div, exactly as the render does.
         if (isBareCellVariant) {
-          html += `<div class="att-cell att-cell--bare"><div class="att-img-wrap att-img-wrap--bare"><img class="att-img att-img--bare" src="${measureEsc(src)}" alt="" /></div><div class="att-filename">${measureEsc(img.fileName || "Attachment")}</div>`;
-          // Formatted-width placeholder — the real formatter is out of scope here; only the
-          // one-line height matters. Same convention as the tasks image-row mirror.
-          html += `<div class="att-timestamp">0000-00-00 00:00</div></div>`;
+          const src = img.base64 || img.originalUrl || img.fileUrl || "";
+          html += `<div class="att-cell att-cell--bare"><div class="att-img-wrap att-img-wrap--bare"><img class="att-img att-img--bare" src="${measureEsc(src)}" alt="" /></div><div class="att-filename">${measureEsc(img.fileName ?? "")}</div>`;
+          html += `<div class="att-timestamp">${measureEsc(measureFormatAttachmentTime(img))}</div></div>`;
         } else {
-          html += `<div class="att-cell"><div class="att-img-wrap"><img class="att-img" src="${measureEsc(src)}" alt="" /></div><div class="att-filename">${measureEsc(img.fileName || "Attachment")}</div></div>`;
+          const src = img.base64 || img.fileUrl || "";
+          html += `<div class="att-cell"><div class="att-img-wrap"><img class="att-img" src="${measureEsc(src)}" alt="" /></div><div class="att-filename">${measureEsc(img.fileName || "Attachment")}</div>`;
+          html += `<div class="att-timestamp">${measureEsc(measureFormatAttachmentTime(img))}</div></div>`;
         }
       }
       html += `</div>`;
@@ -6085,18 +6385,30 @@ function renderSectionForMeasurement(sec, container, ctx) {
   }
 
   if (type === "woPhotos") {
+    // #131 §3.2 — THE RENDER'S LAYOUT, NOT A ROW-PER-PAIR APPROXIMATION. The page draws ONE
+    // `.ba-pair-row` holding a Before column and an After column, each a caption above a STACK
+    // of photo cells, and each cell is the photo PLUS its file name and time when present. The
+    // old mirror drew one row per pair with a caption in every row and no file name or time in
+    // any cell — every photo ~29px short, partly hidden by the repeated captions. Each cell now
+    // carries `data-mh="ba-photo-cell"` and its pair index, so `readSectionHeights` can still
+    // give the packer one height per pair index (the taller of the two cells).
     const before = ctx.woPhotosSnap?.before || [];
     const after = ctx.woPhotosSnap?.after || [];
-    const total = Math.max(before.length, after.length);
-    for (let i = 0; i < total; i++) {
-      html += `<div class="ba-pair-row" data-mh="ba-photo-row">`;
-      for (const [label, arr] of [["Before", before], ["After", after]]) {
-        const img = arr[i];
-        // Mirror render: always emit both cols (50/50); content only when a photo exists.
+    if (before.length || after.length) {
+      html += `<div class="ba-pair-row">`;
+      for (const [label, photos] of [["Before", before], ["After", after]]) {
+        // Always emit both columns (50/50), exactly as the render does; content only when present.
         html += `<div class="ba-pair-col">`;
-        if (img) {
-          const src = img.base64 || img.originalUrl || img.fileUrl || "";
-          html += `<div class="ba-subhdr">${label}</div><div class="ba-photo-stack"><div class="att-cell att-cell--bare"><div class="att-img-wrap att-img-wrap--bare"><img class="att-img att-img--bare" src="${measureEsc(src)}" alt="" /></div></div></div>`;
+        if (photos.length) {
+          html += `<div class="ba-subhdr" data-mh="ba-subhdr">${label}</div><div class="ba-photo-stack">`;
+          photos.forEach((img, pairIndex) => {
+            const src = img.base64 || img.originalUrl || img.fileUrl || "";
+            html += `<div class="att-cell att-cell--bare" data-mh="ba-photo-cell" data-pair-index="${pairIndex}"><div class="att-img-wrap att-img-wrap--bare"><img class="att-img att-img--bare" src="${measureEsc(src)}" alt="" /></div>`;
+            if (img.fileName) html += `<div class="att-filename">${measureEsc(img.fileName)}</div>`;
+            if (img.uploadedTime) html += `<div class="att-timestamp">${measureEsc(measureFormatAttachmentTime(img))}</div>`;
+            html += `</div>`;
+          });
+          html += `</div>`;
         }
         html += `</div>`;
       }
@@ -6119,7 +6431,9 @@ function renderSectionForMeasurement(sec, container, ctx) {
       for (const sid of sortedSids) {
         const arr = snap.tasks[sid] || [];
         if (!arr.length) continue;
-        html += `<tr class="task-section-row" data-mh="task-section-row"><td colspan="3" class="task-section-cell">${measureEsc(sectionsMeta[sid]?.name || "")}</td></tr>`;
+        // #131 §3.2 — the render falls back to "Section N" for a group with no name; an EMPTY
+        // cell here measured the row a whole text line short.
+        html += `<tr class="task-section-row" data-mh="task-section-row"><td colspan="3" class="task-section-cell">${measureEsc(sectionsMeta[sid]?.name || "Section")}</td></tr>`;
         for (const task of arr) {
           // §3.2 / #86 — THIS MARKUP MUST MIRROR THE VUE RENDER LINE-FOR-LINE. It previously did
           // not, and that was the cause of the tasks section cramming and clipping content:
@@ -6153,8 +6467,13 @@ function renderSectionForMeasurement(sec, container, ctx) {
             task.inputValue != null && task.inputValue !== ""
               ? `<span>${measureEsc(task.inputValue)}</span>`
               : `<span class="task-empty">—</span>`;
+          // #131 §3.2 — two details the render has and this line did not: the status dot's
+          // real class (open vs closed), and the SPACE before the criticality badge. The
+          // template writes the subject and the badge on separate lines, and Vue's whitespace
+          // "condense" turns that newline into one space — a space the mirror never printed, so
+          // a subject that just fit beside its badge here wrapped on the page.
           html += `<tr class="task-data-row" data-mh="task-body-row">`
-            + `<td class="task-td task-td--name"><div class="task-name-row"><span class="task-status-dot task-status-dot--open"></span><div class="task-name-body"><span class="task-subject">#${measureEsc(task.uniqueId)}&nbsp;&nbsp;${measureEsc(task.subject)}${criticalityBadgeHtml}</span>${descriptionHtml}${remarksHtml}</div></div></td>`
+            + `<td class="task-td task-td--name"><div class="task-name-row"><span class="task-status-dot ${task.status?.type === "CLOSED" ? "task-status-dot--closed" : "task-status-dot--open"}"></span><div class="task-name-body"><span class="task-subject">#${measureEsc(task.uniqueId)}&nbsp;&nbsp;${measureEsc(task.subject)}${criticalityBadgeHtml ? " " + criticalityBadgeHtml : ""}</span>${descriptionHtml}${remarksHtml}</div></div></td>`
             + `<td class="task-td task-td--asset">${assetCellHtml}</td>`
             + `<td class="task-td task-td--value">${inputValueHtml}</td>`
             + `</tr>`;
@@ -6198,11 +6517,23 @@ function renderSectionForMeasurement(sec, container, ctx) {
     html += `<div class="tbl-wrap"><table><thead data-mh="table-header"><tr><th>Name</th><th>Cost Type</th><th>Qty</th><th>Amount</th></tr></thead><tbody>`;
     for (const rec of rows) {
       const amt = ctx.woCostAmountDisplay ? ctx.woCostAmountDisplay(rec) : String(rec.cost ?? "—");
-      html += `<tr data-mh="table-row"><td>${measureEsc(rec.name)}</td><td>${measureEsc(ctx.woCostTypeDisplay ? ctx.woCostTypeDisplay(rec.costTypeEnum) : rec.costTypeEnum)}</td><td>${measureEsc(rec.quantity)}</td><td>${measureEsc(amt)}</td></tr>`;
+      // #131 §3.2 — the render's fallbacks (`name || '—'`, `quantity ?? '—'`): this table is
+      // auto-width, so even an empty cell changes the column widths every other row wraps in.
+      html += `<tr data-mh="table-row"><td>${measureEsc(rec.name || "—")}</td><td>${measureEsc(ctx.woCostTypeDisplay ? ctx.woCostTypeDisplay(rec.costTypeEnum) : rec.costTypeEnum)}</td><td>${measureEsc(rec.quantity ?? "—")}</td><td>${measureEsc(amt)}</td></tr>`;
     }
     html += `</tbody>`;
     if (showTotal && sec._measureIncludeFooter !== false) {
-      html += `<tfoot data-mh="table-footer"><tr><td colspan="3" style="text-align:right;font-weight:600">Total</td><td>—</td></tr></tfoot>`;
+      // #131 — the real total, built the way the packer's slice carries it, not a dash: in an
+      // auto-width table the total's width is one of the things that sizes the Amount column.
+      let costSum = 0;
+      for (const rec of rows) {
+        const cost = Number(rec && rec.cost);
+        if (Number.isFinite(cost)) costSum += cost;
+      }
+      const totalText = typeof ctx?.woCostTotalFormatted === "function"
+        ? ctx.woCostTotalFormatted({ costSum, costCurrencyCode: (rows[0] && rows[0].currencyCode) || "" })
+        : "—";
+      html += `<tfoot data-mh="table-footer"><tr><td colspan="3" style="text-align:right;font-weight:600">Total</td><td>${measureEsc(totalText)}</td></tr></tfoot>`;
     }
     html += `</table></div></div>`;
     container.innerHTML = html;
@@ -6232,9 +6563,12 @@ function renderSectionForMeasurement(sec, container, ctx) {
     // conditionals so measured column widths/heights match the rendered output.
     html += `<div class="tbl-wrap"><table><thead data-mh="table-header"><tr><th>State</th><th>Start Time</th><th>End Time</th><th>Performed By</th><th>Duration</th></tr></thead><tbody>`;
     for (const log of rows) {
-      const startCell = log.startTime && log.startTime !== -1 ? "00/00/0000 00:00 pm" : "—";
-      const endCell = log.endTime && log.endTime !== -1 ? "00/00/0000 00:00 pm" : "—";
-      const durCell = log.duration === 0 ? "00:00 Hrs" : (log.duration > 0 ? "00 Mins 00 Secs" : "—");
+      // #131 — the render's own strings (ctx carries its formatters). This table is AUTO-width:
+      // the browser sizes its columns from their content, so a placeholder of a different width
+      // re-spreads the columns and changes how the State and Performed By cells wrap.
+      const startCell = log.startTime && log.startTime !== -1 ? measureEsc(measureFormatDate(log.startTime)) : "—";
+      const endCell = log.endTime && log.endTime !== -1 ? measureEsc(measureFormatDate(log.endTime)) : "—";
+      const durCell = log.duration === 0 ? "00:00 Hrs" : (log.duration > 0 ? measureEsc(measureConvertToDuration(log.duration)) : "—");
       html += `<tr data-mh="table-row"><td>${measureEsc(log.fromStatus?.displayName || "—")}</td><td>${startCell}</td><td>${endCell}</td><td>${measureEsc(log.doneBy?.name || "—")}</td><td class="tr">${durCell}</td></tr>`;
     }
     html += `</tbody></table></div></div>`;
@@ -6251,13 +6585,14 @@ function renderSectionForMeasurement(sec, container, ctx) {
     html += `<div class="tbl-wrap"><table class="sla-metrics-table" style="table-layout:fixed;width:100%">`;
     html += `<colgroup><col style="width:21.4%"><col style="width:16.8%"><col style="width:15%"><col style="width:15%"><col style="width:18.2%"><col style="width:13.6%"></colgroup>`;
     html += `<thead data-mh="table-header"><tr><th>Commitment</th><th>Breach</th><th>Start Time</th><th>Due Time</th><th>Status</th><th>Escalation Details</th></tr></thead><tbody>`;
-    const dateLine = `<div style="white-space:nowrap">00/00/0000</div>`;
-    const timeLine = `<div style="white-space:nowrap;font-size:11px">00:00 pm</div>`;
+    // #131 — the render's own date, time and duration strings (ctx carries its formatters).
+    const dateLine = timestamp => `<div style="white-space:nowrap">${measureEsc(measureFormatDate(timestamp, true))}</div>`;
+    const timeLine = timestamp => `<div style="white-space:nowrap;font-size:11px">${measureEsc(measureFormatDate(timestamp, false, true))}</div>`;
     for (const row of rows) {
       const hasStart = row.entityStartTime && row.entityStartTime !== -1;
       const hasDue = row.entityDueTime && row.entityDueTime !== -1;
-      const startCell = hasStart ? dateLine + timeLine : "—";
-      const dueCell = hasDue ? dateLine + timeLine : "—";
+      const startCell = hasStart ? dateLine(row.entityStartTime) + timeLine(row.entityStartTime) : "—";
+      const dueCell = hasDue ? dateLine(row.entityDueTime) + timeLine(row.entityDueTime) : "—";
       let statusCell;
       if (row.entityStatusEnum === "COMPLETED") {
         // #115 §3.2 — three real divergences from the render, all UNDER-measuring (the
@@ -6267,21 +6602,22 @@ function renderSectionForMeasurement(sec, container, ctx) {
         //   • the render's time line carries `margin-top:1px`.
         //   • the render's duration line carries `margin-top:2px`.
         // Each is 1-3px per COMPLETED row, and a work order has one row per SLA commitment.
+        const hasCompletion = row.entityCompletionTime && row.entityCompletionTime !== -1;
         statusCell =
           `<div style="display:flex;align-items:center;gap:4px;white-space:nowrap">`
           + `<svg width="13" height="13" viewBox="0 0 13 13" style="flex-shrink:0"></svg>`
-          + `<span>00/00/0000</span>`
+          + `<span>${hasCompletion ? measureEsc(measureFormatDate(row.entityCompletionTime, true)) : "—"}</span>`
           + `</div>`;
-        if (row.entityCompletionTime && row.entityCompletionTime !== -1) {
-          statusCell += `<div style="white-space:nowrap;font-size:11px;margin-top:1px">00:00 pm</div>`;
+        if (hasCompletion) {
+          statusCell += `<div style="white-space:nowrap;font-size:11px;margin-top:1px">${measureEsc(measureFormatDate(row.entityCompletionTime, false, true))}</div>`;
         }
-        if (row.completedDuration > 0) statusCell += `<div style="white-space:nowrap;font-size:11px;margin-top:2px">00 mins 00 secs</div>`;
+        if (row.completedDuration > 0) statusCell += `<div style="white-space:nowrap;font-size:11px;margin-top:2px">${measureEsc(measureConvertToDuration(Math.floor(row.completedDuration / 1000)))}</div>`;
       } else if (row.entityStatusEnum === "ACTIVE") {
         statusCell = "Active";
       } else {
         statusCell = measureEsc(row.entityStatusEnum) || "—";
       }
-      html += `<tr data-mh="table-row"><td style="word-break:normal;overflow-wrap:anywhere">${measureEsc(row.commitmentName)}</td><td style="word-break:normal;overflow-wrap:anywhere">${measureEsc(row.entityName)}</td><td>${startCell}</td><td>${dueCell}</td><td>${statusCell}</td><td>${row.escalatedStatus ? "Escalated" : "—"}</td></tr>`;
+      html += `<tr data-mh="table-row"><td style="word-break:normal;overflow-wrap:anywhere">${measureEsc(row.commitmentName || "—")}</td><td style="word-break:normal;overflow-wrap:anywhere">${measureEsc(row.entityName || "—")}</td><td>${startCell}</td><td>${dueCell}</td><td>${statusCell}</td><td>${row.escalatedStatus ? "Escalated" : "—"}</td></tr>`;
     }
     html += `</tbody></table></div></div>`;
     container.innerHTML = html;
@@ -6293,7 +6629,9 @@ function renderSectionForMeasurement(sec, container, ctx) {
     html += `<div class="insp-checklist">`;
     for (const it of items) {
       if (it.kind === "page") {
-        html += `<div class="insp-page-hdr" data-mh="table-row"><span class="insp-page-name">${it.name ? measureEsc(it.name) : `Page ${measureEsc(String(it.position || ""))}`}</span>${it.scoreLabel ? `<span class="insp-score-badge">Score: ${measureEsc(it.scoreLabel)}</span>` : ""}</div>`;
+        // #131 §3.2 — the render prints "Page N/total" when it knows the total.
+        const unnamedPageTitle = `Page ${it.position ?? ""}${it.total ? `/${it.total}` : ""}`;
+        html += `<div class="insp-page-hdr" data-mh="table-row"><span class="insp-page-name">${it.name ? measureEsc(it.name) : measureEsc(unnamedPageTitle)}</span>${it.scoreLabel ? `<span class="insp-score-badge">Score: ${measureEsc(it.scoreLabel)}</span>` : ""}</div>`;
       } else if (it.kind === "section") {
         html += `<div class="insp-section-hdr" data-mh="table-row">${measureEsc(it.name)}</div>`;
       } else if (it.kind === "question") {
@@ -6406,6 +6744,23 @@ function renderSectionForMeasurement(sec, container, ctx) {
 
   if (type === "lineItems") {
     const rows = sec.lineItemRows || [];
+    // #131 §3.2 — THE SUMMARY ROWS ARE MEASURED NOW. Sub Total, Discount, Tax, Shipping,
+    // Adjustments, Grand Total: the render prints them as a <tfoot>, and the packer used to
+    // budget them at a flat 28px a row, unmeasured — a real row is ~34px, and a long value in
+    // the narrow last column wraps to two lines. Six summary rows were ~146px short on the
+    // last page of a quote. Emitted exactly as the render emits them (stripe class on even
+    // rows for quotes, bold rows inline), with `data-mh="table-footer"` so `readSectionHeights`
+    // returns their real height as `tableFooter`. Probe chunks set `_measureIncludeFooter:false`.
+    const buildLineItemsSummaryFooterHtml = (summaryRows, columnCount, stripeEvenRows) => {
+      if (!Array.isArray(summaryRows) || !summaryRows.length || sec._measureIncludeFooter === false) return "";
+      let footerHtml = `<tfoot data-mh="table-footer">`;
+      summaryRows.forEach((summaryRow, summaryIndex) => {
+        const boldStyle = summaryRow.bold ? ` style="font-weight:700"` : "";
+        const stripeClass = stripeEvenRows && summaryIndex % 2 === 0 ? ` class="quote-tfoot-stripe"` : "";
+        footerHtml += `<tr${stripeClass}><td colspan="${Math.max(1, (columnCount || 1) - 1)}" class="tr"${boldStyle}>${measureEsc(summaryRow.label)}</td><td class="tr"${boldStyle}>${measureEsc(summaryRow.value ?? "—")}</td></tr>`;
+      });
+      return footerHtml + `</tfoot>`;
+    };
     if (sec.lineItemsStyle === "quote") {
       // MUST mirror the real Vue render (slice.lineItemsStyle==='quote' block) line-for-line:
       // same dynamic <colgroup>/align from sec.quoteColumns, same cell content — otherwise
@@ -6456,7 +6811,7 @@ function renderSectionForMeasurement(sec, container, ctx) {
         }
         html += `</tr>`;
       }
-      html += `</tbody></table></div></div>`;
+      html += `</tbody>${buildLineItemsSummaryFooterHtml(sec.quoteSummaryRows, cols.length, true)}</table></div></div>`;
       container.innerHTML = html;
       return;
     }
@@ -6464,8 +6819,8 @@ function renderSectionForMeasurement(sec, container, ctx) {
       // MUST mirror the real Vue render (slice.lineItemsStyle==='procurement' block)
       // line-for-line: same dynamic <colgroup>/align from sec.prColumns, same cell content
       // — otherwise measured height diverges from rendered height and page-split mis-packs
-      // (§3.2). Footer rows are estimated via footerH in the packer, not measured here —
-      // same convention as the quote style above.
+      // (§3.2). Footer rows: measured here since #131 (`buildLineItemsSummaryFooterHtml`), the
+      // same as the quote style above — they used to be a flat per-row estimate.
       const cols = sec.prColumns || [];
       const cur = sec.prCurrency || "";
       const alignClass = c => (c.align === "right" ? " class=\"tr\"" : (c.align === "center" ? " class=\"tc\"" : ""));
@@ -6502,13 +6857,14 @@ function renderSectionForMeasurement(sec, container, ctx) {
         }
         html += `</tr>`;
       }
-      html += `</tbody></table></div></div>`;
+      html += `</tbody>${buildLineItemsSummaryFooterHtml(sec.prSummaryRows, cols.length, false)}</table></div></div>`;
       container.innerHTML = html;
       return;
     }
     html += `<div class="tbl-wrap"><table style="table-layout:fixed;width:100%"><thead data-mh="table-header"><tr><th style="width:10%">Type</th><th style="width:22%">Name</th><th style="width:22%">Description</th><th style="width:20%">Store Room</th><th class="tc" style="width:13%">Requested Qty</th><th class="tc" style="width:13%">Issued Qty</th></tr></thead><tbody>`;
     for (const row of rows) {
-      html += `<tr data-mh="table-row"><td>${measureEsc(row._typeLabel)}</td><td>${measureEsc(row._resolvedName)}</td><td>${measureEsc(row._resolvedDescription)}</td><td>${measureEsc(row._resolvedStoreRoom)}</td><td>${measureEsc(formatLineItemQuantityForMeasurement(row.quantity))}</td><td>${measureEsc(formatLineItemQuantityForMeasurement(row.issuedQuantity))}</td></tr>`;
+      // #131 §3.2 — the render's `|| '—'` fallbacks: an empty cell here was a line the render prints.
+      html += `<tr data-mh="table-row"><td>${measureEsc(row._typeLabel || "—")}</td><td>${measureEsc(row._resolvedName || "—")}</td><td>${measureEsc(row._resolvedDescription || "—")}</td><td>${measureEsc(row._resolvedStoreRoom || "—")}</td><td class="tc">${measureEsc(formatLineItemQuantityForMeasurement(row.quantity))}</td><td class="tc">${measureEsc(formatLineItemQuantityForMeasurement(row.issuedQuantity))}</td></tr>`;
     }
     html += `</tbody></table></div></div>`;
     container.innerHTML = html;
@@ -6516,13 +6872,63 @@ function renderSectionForMeasurement(sec, container, ctx) {
   }
 
   if (type === "timeDetails" && sec.timeDetailsData) {
+    // #131 §3.2 — REWRITTEN TO MIRROR THE RENDER ELEMENT FOR ELEMENT. This was the largest
+    // single drift in the file, and it is the one that clipped work order 1957476 (page 9,
+    // live, 2026-10-01). The old mirror drew a bare "00:00:00" with no classes, no HR/MINS/SECS
+    // labels and no "Completed of N tasks" counter; drew Scheduled and Actual as ONE line of raw
+    // epoch numbers each, where the render draws a time line over a date line on both sides of
+    // a "To"; skipped either block when its dates were empty, where the render always draws
+    // both; and never drew the Response Due / Due Date row at all. It measured 134-189px for a
+    // block that renders 210-272px. Every string below comes from the render's own formatters.
     const d = sec.timeDetailsData;
-    html += `<div class="td-wrap" data-mh="section-total"><div class="td-top"><div class="td-timer-block"><div class="td-timer"><span>00</span>:<span>00</span>:<span>00</span></div></div></div>`;
-    if (d.scheduledStart || d.estimatedEnd) {
-      html += `<div class="td-block"><div class="td-block-label">Scheduled</div><div class="td-range"><div>${measureEsc(d.scheduledStart)}</div><div>${measureEsc(d.estimatedEnd)}</div></div></div>`;
+    const timerParts = typeof ctx?.formatHMSParts === "function"
+      ? ctx.formatHMSParts(d)
+      : { d: null, h: "00", m: "00", s: "00" };
+    const timerValue = text => `<span class="td-timer-val">${measureEsc(text)}</span>`;
+    const timerSeparator = `<span class="td-timer-sep">:</span>`;
+    html += `<div class="td-wrap" data-mh="section-total"><div class="td-top"><div class="td-timer-block"><div class="td-timer">`;
+    if (timerParts.d !== null) html += timerValue(timerParts.d) + timerSeparator;
+    html += timerValue(timerParts.h) + timerSeparator + timerValue(timerParts.m) + timerSeparator + timerValue(timerParts.s);
+    html += `</div><div class="td-timer-labels">`;
+    if (timerParts.d !== null) html += `<span class="td-timer-label">DAYS</span>`;
+    html += `<span class="td-timer-label">HR</span><span class="td-timer-label">MINS</span><span class="td-timer-label">SECS</span></div></div>`;
+    if (d.noOfClosedTasks != null) {
+      html += `<div class="td-tasks"><div class="td-tasks-num">${measureEsc(d.noOfClosedTasks)}</div><div class="td-tasks-label">Completed of ${measureEsc(d.noOfTasks)} tasks</div></div>`;
     }
-    if (d.actualWorkStart || d.actualWorkEnd) {
-      html += `<div class="td-block"><div class="td-block-label">Actual</div><div class="td-range"><div>${measureEsc(d.actualWorkStart)}</div><div>${measureEsc(d.actualWorkEnd)}</div></div></div>`;
+    html += `</div>`;
+    const rangeSide = (timestamp, extraClass) =>
+      `<div class="td-range-side${extraClass}"><div class="td-range-time">${measureEsc(measureFormatDate(timestamp, false, true))}</div><div class="td-range-date">${measureEsc(measureFormatDate(timestamp, true))}</div></div>`;
+    for (const [blockLabel, startTimestamp, endTimestamp] of [
+      ["Scheduled", d.scheduledStart, d.estimatedEnd],
+      ["Actual", d.actualWorkStart, d.actualWorkEnd],
+    ]) {
+      html += `<div class="td-block"><div class="td-block-label">${blockLabel}</div><div class="td-range">`
+        + rangeSide(startTimestamp, "") + `<div class="td-range-sep">To</div>` + rangeSide(endTimestamp, " td-range-side--right")
+        + `</div></div>`;
+    }
+    if (d.responseDueDate || d.dueDate) {
+      const dateCard = (cardLabel, timestamp) =>
+        `<div class="td-date-card"><div class="td-date-label">${cardLabel}</div><div class="td-date-time">${measureEsc(measureFormatDate(timestamp, false, true))}</div><div class="td-date-date">${measureEsc(measureFormatDate(timestamp, true))}</div></div>`;
+      html += `<div class="td-dates">`
+        + (d.responseDueDate ? dateCard("Response Due", d.responseDueDate) : "")
+        + (d.dueDate ? dateCard("Due Date", d.dueDate) : "")
+        + `</div>`;
+    }
+    html += `</div></div>`;
+    container.innerHTML = html;
+    return;
+  }
+
+  if (type === "inspectionScore") {
+    // #131 §3.2 — this section had NO mirror: it fell through to the "—" default and the
+    // packer budgeted it at a flat header + 110px. Tiles cannot wrap their value (nowrap +
+    // ellipsis) but their LABEL can, and a two-line label makes the tile taller than 110px.
+    // Mirrors the render's `.insp-tiles` block exactly.
+    html += `<div class="insp-tiles" data-mh="section-total">`;
+    for (const tile of sec.scoreTiles || []) {
+      html += `<div class="insp-tile"><div class="insp-tile__label">${measureEsc(tile.label)}</div><div class="insp-tile__value">${measureEsc(tile.value)}</div>`;
+      if (tile.sub) html += `<div class="insp-tile__sub">${measureEsc(tile.sub)}</div>`;
+      html += `</div>`;
     }
     html += `</div></div>`;
     container.innerHTML = html;
@@ -6612,13 +7018,51 @@ async function measureSectionHeights(renderedSections, ctx) {
 
     renderSectionForMeasurement(sec, wrapper, ctx);
 
+    // #131 — a photo whose height comes from the picture must have loaded before it is read.
+    await waitForIntrinsicHeightImagesToSettle(wrapper);
     await new Promise(r => requestAnimationFrame(r));
-
-    const headerEl = wrapper.querySelector('[data-mh="section-header"]');
-    if (headerEl) heights._sectionHeader = heights._sectionHeader || headerEl.offsetHeight;
 
     const sectionId = sectionMeasureKey(sec);
     heights[sectionId] = readSectionHeights(sec.sectionType, wrapper);
+
+    // #131 — THIS section's header, measured as it will print: margins included, from its own
+    // title, and a second time with the " (continued)" suffix every continuation slice carries
+    // (`sliceTitle`), because twelve more characters can wrap a title onto a second line. A
+    // pair has no header of its own (its halves do, at half width), so a pair neither records
+    // one nor seeds the document-wide fallback unless nothing else does.
+    const headerEl = wrapper.querySelector('[data-mh="section-header"]');
+    if (headerEl) {
+      const plainHeaderBlock = measureOuterHeightPx(headerEl);
+      if (sec.sectionType !== "pair") {
+        const titleEl = headerEl.querySelector(".section-title");
+        let continuedHeaderBlock = plainHeaderBlock;
+        if (titleEl) {
+          const plainTitle = titleEl.textContent;
+          titleEl.textContent = `${sec.sectionName || "Section"} (continued)`.toUpperCase();
+          continuedHeaderBlock = measureOuterHeightPx(headerEl);
+          titleEl.textContent = plainTitle;
+        }
+        heights[sectionId].headerBlock = plainHeaderBlock;
+        heights[sectionId].headerBlockContinued = continuedHeaderBlock;
+        if (heights._sectionHeader == null || heights._sectionHeaderFromPair) {
+          heights._sectionHeader = plainHeaderBlock;
+          heights._sectionHeaderFromPair = false;
+        }
+      } else if (heights._sectionHeader == null) {
+        heights._sectionHeader = plainHeaderBlock;
+        heights._sectionHeaderFromPair = true;
+      }
+    }
+    // #131 — `.section`'s own padding-bottom + border-bottom, read once from the stylesheet as
+    // applied, instead of the 16 + 1 constants that would silently go stale with the CSS.
+    if (heights._sectionBoxBottom == null && sec.sectionType !== "pair") {
+      const sectionElement = wrapper.querySelector(".section");
+      if (sectionElement) {
+        const sectionStyle = window.getComputedStyle(sectionElement);
+        heights._sectionBoxBottom =
+          (parseFloat(sectionStyle.paddingBottom) || 0) + (parseFloat(sectionStyle.borderBottomWidth) || 0);
+      }
+    }
 
     container.removeChild(wrapper);
   }
@@ -6679,12 +7123,13 @@ async function computeHalfSectionHeight(half, pageBudget, measurements) {
 async function splitTableSectionIntoSlices(sec, rows, pageBudget, opts) {
   const { metrics, sid, footerH = 0, makeSlice, appendSlice, getPlanBudget, measureCtx,
           stickyHeaders = null, rowHeights = null, extraChromeH = 0,
-          estimateRowHeights = null } = opts;
+          estimateRowHeights = null, sectionAlreadyStarted = false, tableHeaderH = null } = opts;
   const m = metrics;
   // Flat-table path: chunkMeasurer only when no typed-row heights supplied.
   const chunkMeasurer = rowHeights ? null : createTableChunkMeasurer(sec, rows, measureCtx);
-  const secHdr = m.sectionHeader();
-  const tblHdr = m.tableHeader(sid);
+  // #131 — `tableHeaderH` lets a caller that splits several tables under one section id
+  // (Plans/Actuals) give each table its own measured header; everyone else is unchanged.
+  const tblHdr = tableHeaderH ?? m.tableHeader(sid);
   // #101 FIX 2 — px BETWEEN row units, which `offsetHeight` (and therefore every rowHeights
   // array) excludes. Read from the metrics rather than taken as an opt, so all eight existing
   // call sites are untouched: it is measured per section and is 0 for every `<tr>`-based
@@ -6695,13 +7140,23 @@ async function splitTableSectionIntoSlices(sec, rows, pageBudget, opts) {
   // label, which renders above the table on EVERY slice of that table, including continuations
   // where the section header is suppressed. Without it a split table over-fills each page by
   // the label's height.
-  const chromeH = secHdr + tblHdr + extraChromeH + PDF_TABLE_SLICE_PAD + PDF_SECTION_BOX_BOTTOM;
+  //
+  // #131 — the chrome is now worked out PER SLICE, from measured parts: this section's own
+  // header with its margins (the "(continued)" title for every slice after the first, since
+  // that longer title can wrap), and `.section`'s measured padding + border below. Before, every
+  // slice used one document-wide header height read WITHOUT its 12px margin.
+  // `sectionAlreadyStarted` (default false) is for a caller that splits ONE section as several
+  // tables (Plans/Actuals): a later table's first slice already prints the continued title.
+  const chromeFor = continuedSlice =>
+    m.sectionHeader(sid, continuedSlice || sectionAlreadyStarted) + tblHdr + extraChromeH
+      + PDF_TABLE_SLICE_PAD + m.sectionBoxBottom();
   let idx = 0;
   let hadSlice = false;
 
   // Flat-table (no typed-row opts) — identical code path as before.
   if (!stickyHeaders && !rowHeights) {
     while (idx < rows.length) {
+      const chromeH = chromeFor(hadSlice);
       // #101 — the PLACEMENT decision ("can this start on what is left of the page?") is made
       // from the heights of the next one and two rows; the chunk-shrink loop separately keeps
       // using the conservative worst-case row height. Before this, both used the worst case,
@@ -6752,6 +7207,7 @@ async function splitTableSectionIntoSlices(sec, rows, pageBudget, opts) {
   }
 
   while (idx < rows.length) {
+    const chromeH = chromeFor(hadSlice);
     // Step 1: determine re-emitted header (continuation only).
     // A continuation slice that starts mid-group re-emits the active group header at the top.
     // Its height must be subtracted from the plan budget so packing accounts for it.
@@ -6881,10 +7337,23 @@ async function packSectionsIntoPdfPages(
     return Math.max(0, budget - used);
   }
 
+  /**
+   * #131 — THE LAST SECTION ON A PAGE DROPS ITS BOX. `.doc-content > .section:last-child`
+   * removes its padding-bottom and border (17px), and every slice estimate includes them. That
+   * was harmless slack while estimates ran short; once they are exact (#131) it would cost a row
+   * at the bottom of many pages. So a slice may use the box's height when it is the one that
+   * ends the page: it fits when `used + gap + estH - saving <= budget`, and `used` still books
+   * the full estimate, so a slice that comes after it is checked with the box counted. A pair
+   * (`.section-pair`) keeps its box as the last child — that rule targets `.section` only.
+   */
+  const lastChildBoxSavingPx = m.sectionBoxBottom();
+  const lastChildSavingFor = sectionType => (sectionType === "pair" ? 0 : lastChildBoxSavingPx);
+
   /** Budget for the next slice so used + gap + estH <= page budget (matches appendSlice). */
   function remainingPageBudgetForNewSlice() {
     const gap = cur.slices.length > 0 ? PDF_SECTION_GAP : 0;
-    return Math.max(0, budget - used - gap);
+    // #131 — the splitters only ever produce `.section` slices, so the saving always applies.
+    return Math.max(0, budget - used - gap + lastChildBoxSavingPx);
   }
 
   function continuedHeaderCostForSlice(continued, sectionType) {
@@ -6987,13 +7456,14 @@ async function packSectionsIntoPdfPages(
   }
 
   function appendSlice(slice, estH) {
-    const h = Math.min(estH, budget);
+    const lastChildSavingPx = lastChildSavingFor(slice.sectionType);   // #131 — see above
+    const h = Math.min(estH, budget + lastChildSavingPx);
     const usedBeforeBreak = used;
     const remainBeforeBreak = Math.max(0, budget - usedBeforeBreak);
     let newPage = false;
     let continuedHdr = 0;
     let gapBeforeBreak = cur.slices.length > 0 ? PDF_SECTION_GAP : 0;
-    if (cur.slices.length > 0 && used + gapBeforeBreak + h > budget) {
+    if (cur.slices.length > 0 && used + gapBeforeBreak + h - lastChildSavingPx > budget) {
       newPage = true;
       continuedHdr = continuedHeaderCostForSlice(!!slice.continued, slice.sectionType);
       startNewPage(0);
@@ -7006,12 +7476,12 @@ async function packSectionsIntoPdfPages(
     // box is then CLIPPED by `.doc-content{overflow:hidden}`. Nothing can split a single
     // table row, comment card or finding mid-cell, so this stays the behaviour — but it must
     // not stay SILENT, because the only symptom is content quietly missing from the PDF.
-    if (estH > budget) {
+    if (estH - lastChildSavingPx > budget) {
       pdfLog(
         "error",
         `Section "${slice.sectionName || slice.sectionType}" contains a single unsplittable block ` +
           `${Math.round(estH)}px tall, which exceeds the ${budget}px page content budget — ` +
-          `about ${Math.round(estH - budget)}px WILL BE CLIPPED from the printed page. ` +
+          `about ${Math.round(estH - lastChildSavingPx - budget)}px WILL BE CLIPPED from the printed page. ` +
           `This is one row/card/finding that cannot be broken across pages; shorten the record's ` +
           `content, or split it into multiple rows, to print it in full.`,
       );
@@ -7070,7 +7540,8 @@ async function packSectionsIntoPdfPages(
   for (let sectionIndex = 0; sectionIndex < sectionsToPack.length; sectionIndex++) {
     const sec = sectionsToPack[sectionIndex];
     const sid = sectionMeasureKey(sec);
-    const headerH = m.sectionHeader();
+    // #131 — THIS section's measured header (margins included), not a document-wide one.
+    const headerH = m.sectionHeader(sid);
     // ── PAIR: two half-width sections side by side (atomic — one slice) ──
     if (sec.sectionType === "pair") {
       // #101 — prefer the halves' REAL measured heights (captured side by side, in the
@@ -7131,10 +7602,10 @@ async function packSectionsIntoPdfPages(
       continue;
     }
     if (sec.sectionType === "fields" && !sec.isEmpty) {
-      const fieldSlices = await splitFieldGridIntoSlices(sec, budget, getPlanBudgetForTableSlice, measurements);
-      for (const sl of fieldSlices) {
-        appendSlice(sl, sl.estH);
-      }
+      // #131 — each slice is placed as soon as it is made (`appendSlice` passed in), so the
+      // splitter plans the first one against the space really left on this page and the table
+      // that follows against the page the grid actually ended on.
+      await splitFieldGridIntoSlices(sec, budget, getPlanBudgetForTableSlice, measurements, appendSlice);
       continue;
     }
     if (sec.sectionType === "comments" && !sec.isEmpty && commentsList.length) {
@@ -7196,7 +7667,7 @@ async function packSectionsIntoPdfPages(
 
       if (!tasksSnapshot || !tasksSnapshot.tasks || !Object.keys(tasksSnapshot.tasks).length) {
         // Empty tasks section — emit a single empty slice (matches old splitTasksIntoSlices behavior).
-        const base = m.sectionHeader() + m.tableHeader(sid);
+        const base = m.sectionHeader(sid) + m.tableHeader(sid);
         appendSlice({
           ...sliceBase(sec, "tasks"),
           continued: false,
@@ -7374,7 +7845,12 @@ async function packSectionsIntoPdfPages(
       const isQuote = sec.lineItemsStyle === "quote";
       const isPr = sec.lineItemsStyle === "procurement";
       const footerRowCount = isQuote ? (sec.quoteSummaryRows?.length || 0) : (isPr ? (sec.prSummaryRows?.length || 0) : 0);
-      const footerH = footerRowCount * PDF_EST_TABLE_ROW;
+      // #131 — the summary footer's MEASURED height (the mirror now draws it); the old flat
+      // 28px-a-row estimate survives only as the fallback when nothing was measured.
+      const measuredSummaryFooterH = m.h(sid).tableFooter;
+      const footerH = footerRowCount
+        ? (measuredSummaryFooterH > 0 ? measuredSummaryFooterH : footerRowCount * PDF_EST_TABLE_ROW)
+        : 0;
       await splitSectionIntoSlices(sec, sec.lineItemRows, {
         footerH,
         measureCtx,
@@ -7429,7 +7905,9 @@ async function packSectionsIntoPdfPages(
         measureCtx: null,
         stickyHeaders: photoPairIndexes.map(() => false),
         rowHeights: photoPairHeights,
-        extraChromeH: PDF_EST_BA_SUBHDR + 8,
+        // #131 — the Before/After caption's MEASURED height with its margin; the old constant
+        // pair is the fallback for a section that was not measured.
+        extraChromeH: m.h(sid).subHeaderBlock ?? (PDF_EST_BA_SUBHDR + 8),
         makeSlice: (chunk, continued) => ({
           ...sliceBase(sec, "woPhotos"),
           continued,
@@ -7568,7 +8046,8 @@ async function packSectionsIntoPdfPages(
     if (sec.sectionType === "inspectionScore" && !sec.isEmpty) {
       appendSlice(
         { sectionType: "inspectionScore", sectionName: sec.sectionName, sectionId: sec.sectionId, continued: false, scoreTiles: sec.scoreTiles || [] },
-        Math.min(headerH + 110, budget),
+        // #131 — measured (the mirror now draws the tiles); the old constant is the fallback.
+        m.sectionTotal(sid) ?? Math.min(headerH + 110, budget),
       );
       continue;
     }
@@ -7674,12 +8153,23 @@ async function packSectionsIntoPdfPages(
         // so a finding taller than a page was clipped without the error line every other
         // section type now emits. Passing the true height keeps placement identical and makes
         // the overflow reportable.
+        //
+        // #131 — EVERY finding's slice is budgeted WITH a header. The comment above said a
+        // continuation "carries no section header", but the template draws one on every slice
+        // that is not explicitly hidden — "Findings (continued)" — so each finding after the
+        // first rendered ~40px taller than it was packed. Same fix as #58 used for Plans/Actuals:
+        // budget the header (safe), then withdraw it when the finding did not land at the top of
+        // a page, where the header is already visible above it. Withdrawing renders LESS than
+        // was budgeted, never more, and it also ends the run of repeated "(continued)" headers
+        // down a single page.
         const sliceEstH =
-          (continued ? 0 : headerH) + measuredH + PDF_TABLE_SLICE_PAD + PDF_SECTION_BOX_BOTTOM;
-        appendSlice(
-          { sectionType: "inspectionFindings", sectionName: sec.sectionName, sectionId: sec.sectionId, continued, findingFlags: sec.findingFlags, finding: f },
-          sliceEstH,
-        );
+          m.sectionHeader(sid, continued) + measuredH + PDF_TABLE_SLICE_PAD + m.sectionBoxBottom();
+        const findingSlice = { sectionType: "inspectionFindings", sectionName: sec.sectionName, sectionId: sec.sectionId, continued, hideHeader: false, findingFlags: sec.findingFlags, finding: f };
+        appendSlice(findingSlice, sliceEstH);
+        if (continued && cur.slices[0] !== findingSlice) {
+          findingSlice.hideHeader = true;
+          findingSlice.continued = false;
+        }
         continued = true;
       }
       continue;
@@ -7725,6 +8215,10 @@ async function packSectionsIntoPdfPages(
       // is) and gains "(continued)" only on a continuation chunk of that same table.
       const woTables = sec.woTables || [];
       const measuredTableLabelHeight = measurements?.sectionHeights?.[sid]?.woTableLabel ?? 0;
+      // #131 — each table's OWN measured label and header (see readSectionHeights).
+      const measuredTableLabels = measurements?.sectionHeights?.[sid]?.woTableLabels || [];
+      const measuredTableChromes = measurements?.sectionHeights?.[sid]?.woTableChromes || [];
+      let woTableIndex = -1;
       // The section's measurement pass renders ALL its tables, so this array holds every
       // table's rows flattened in declaration order. Walking a cumulative offset gives each
       // table its own slice of real measured row heights for the Step-1 estimate.
@@ -7733,6 +8227,7 @@ async function packSectionsIntoPdfPages(
       let hasEmittedSectionHeader = false;
 
       for (const woTable of woTables) {
+        woTableIndex++;
         const tableRows = woTable.rows || [];
         const measuredRowHeightsForThisTable = allMeasuredRowHeights.length
           ? allMeasuredRowHeights.slice(measuredRowOffset, measuredRowOffset + tableRows.length)
@@ -7776,7 +8271,10 @@ async function packSectionsIntoPdfPages(
             hasEmittedSectionHeader = true;
           },
           measureCtx,
-          extraChromeH: measuredTableLabelHeight,
+          extraChromeH: measuredTableLabels[woTableIndex] ?? measuredTableLabelHeight,
+          tableHeaderH: measuredTableChromes[woTableIndex] ?? null,
+          // #131 — a later table's first slice already prints the "(continued)" section title.
+          sectionAlreadyStarted: hasEmittedSectionHeader,
           // Step-1 estimate only — Step 2 still validates every chunk against a real render.
           estimateRowHeights: measuredRowHeightsForThisTable,
           makeSlice: (chunk, continued) => ({
@@ -13021,6 +13519,18 @@ createApp({
         displayAny,
         woCostTypeDisplay,
         woCostAmountDisplay,
+        // #131 — the render's own formatters, handed to the measurement mirror so it prints
+        // every date, time, duration and total exactly as the page will (§3.2). Before this the
+        // mirror could not reach them (they live in setup()) and drew "same-width" placeholders
+        // instead — which in an auto-width table re-spread the columns, and in Time Details
+        // stood in for lines it never drew at all.
+        formatDate,
+        formatAttachmentTime,
+        formatHMSParts,
+        converttoduration,
+        initials: getInitials,
+        isEmpty,
+        woCostTotalFormatted,
       };
 
       // #115 — measure only once the real font is in play; see waitForPdfWebFontsReady.
@@ -13032,7 +13542,14 @@ createApp({
 
       // #101 — measure the real page content box rather than assuming it. `headerRecordStatus`
       // decides whether the header carries a third line, which is worth 16px of every page.
-      const pageContentBudgetPx = measurePageContentBudgetPx(!!headerRecordStatus.value);
+      // #131 — with the header's REAL text, so a long module name or status that wraps is
+      // measured as wrapping (the template's own expressions, character for character).
+      const pageContentBudgetPx = measurePageContentBudgetPx(!!headerRecordStatus.value, {
+        docType: contextModuleDisplayName.value || toTitle(contextModuleLinkName.value || "Record"),
+        docId: `# ${recordData.value?.serialNumber || contextRecordId.value || ""}`,
+        status: headerRecordStatus.value || "",
+        footerContext: PDF_UI_BRANDING.footerShowContextLine ? (footerContextSummary.value || "") : "",
+      });
       pdfLog(
         "info",
         `Page content budget measured at ${pageContentBudgetPx}px ` +
@@ -13203,6 +13720,10 @@ createApp({
       if (!lastPackContext || !pdfPages.value.length) return;
       for (let pass = 0; pass <= PDF_FIT_MAX_CORRECTION_PASSES; pass++) {
         await nextTick();
+        // #131 — the rendered pages are measured only once every photo whose height comes from
+        // the picture has loaded; before that a task photo row reads ~200px short and a page
+        // that will overflow is reported as fitting.
+        await waitForIntrinsicHeightImagesToSettle(document.querySelector(".page-stack"));
         await new Promise(resolve => requestAnimationFrame(resolve));
         const report = measureRenderedPageFit();
         if (!report.length) {
@@ -14296,7 +14817,22 @@ createApp({
      * Note: if the connected-app iframe title is overridden by the host platform, this may
      * have no effect — see DECISIONS #24 open questions.
      */
-    function printViaBrowserPrintDialog() {
+    async function printViaBrowserPrintDialog() {
+      // #131 — THE LAST CHECK BEFORE PAPER. The page fit was verified when the document
+      // rendered; anything that has changed the layout SINCE — a photo that finished loading
+      // late, a font face that arrived late — would otherwise go to the printer unchecked. When
+      // nothing is pending (the normal case) this costs nothing and the dialog opens at once,
+      // still inside the click; otherwise the pages are re-checked (and re-packed if needed)
+      // first.
+      const pageStack = document.querySelector(".page-stack");
+      const hasPendingIntrinsicImages = !!pageStack && [...pageStack.querySelectorAll(PDF_INTRINSIC_HEIGHT_IMAGE_SELECTOR)]
+        .some(image => !image.complete);
+      const fontsStillLoading = typeof document !== "undefined" && document.fonts && document.fonts.status === "loading";
+      if (hasPendingIntrinsicImages || fontsStillLoading) {
+        pdfLog("info", "PRINT — layout inputs were still loading; re-checking the page fit before opening the print dialog.");
+        await waitForPdfWebFontsReady();
+        await enforceRenderedPageFit();
+      }
       const prevTitle = document.title;
       document.title = buildPdfFileName().replace(/\.pdf$/, "");
       window.print();
@@ -14365,7 +14901,7 @@ createApp({
       isSummaryWidgetDownloadBusy.value = true;
       try {
         if (!isMobileDevice()) {
-          printViaBrowserPrintDialog();
+          await printViaBrowserPrintDialog();
           return;
         }
         pdfLog("info", "SUMMARY WIDGET — download requested; using the mobile capture path.");
@@ -14403,7 +14939,7 @@ createApp({
       // Kept functional for desktop; mobile path here is a fallback if somehow
       // onPrintOrDownload is invoked on mobile (e.g. deep link / future entry point).
       if (!isMobileDevice()) {
-        printViaBrowserPrintDialog();
+        await printViaBrowserPrintDialog();
         return;
       }
       // Mobile fallback (should not normally be reached — mobile path runs via loadTemplateAndData)
